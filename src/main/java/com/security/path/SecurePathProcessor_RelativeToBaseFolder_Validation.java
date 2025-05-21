@@ -3,6 +3,8 @@ package com.security.path;
 import java.io.File;
 import java.io.IOException;
 
+import org.owasp.esapi.ValidationErrorList;
+
 /**
  * This class contains a secure path processing implementation
  * that uses canonical path comparison to ensure paths are relative to a base directory.
@@ -21,7 +23,7 @@ public class SecurePathProcessor_RelativeToBaseFolder_Validation extends PathPro
      * @return true if the path is valid (contained within base directory), false otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
         if (path == null) {
             return false;
         }
@@ -51,7 +53,7 @@ public class SecurePathProcessor_RelativeToBaseFolder_Validation extends PathPro
      * @return The sanitized path
      */
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(java.lang.String path) {
         throw new UnsupportedOperationException("Sanitization is not supported for this processor");
     }
 } 

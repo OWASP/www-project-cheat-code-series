@@ -2,6 +2,8 @@ package com.security.path;
 
 import java.util.regex.Pattern;
 
+import org.owasp.esapi.ValidationErrorList;
+
 /**
  * This class contains a secure path processing implementation
  * that uses whitelist regex validation to only allow alphanumeric characters.
@@ -21,7 +23,7 @@ public class SecurePathProcessor_RegexValidation_Whitelist_AlphaNumericDot exten
      * @return true if the path is valid (contains only alphanumeric characters), false otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
         if (path == null) {
             return false;
         }
@@ -34,7 +36,7 @@ public class SecurePathProcessor_RegexValidation_Whitelist_AlphaNumericDot exten
      * @return The sanitized path containing only alphanumeric characters
      */
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(java.lang.String path) {
         if (path == null) {
             return "";
         }

@@ -1,8 +1,7 @@
 package com.security.path;
 
-import java.io.IOException;
-import org.owasp.esapi.reference.DefaultSecurityConfiguration;
 import org.owasp.esapi.SecurityConfiguration;
+import org.owasp.esapi.reference.DefaultSecurityConfiguration;
 
 /**
  * Main class demonstrating secure and insecure path processing implementations.

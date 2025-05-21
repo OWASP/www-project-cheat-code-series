@@ -1,9 +1,8 @@
 package com.security.path;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
+import org.owasp.esapi.ValidationErrorList;
 
 /**
  * This class contains a secure path processing implementation
@@ -22,12 +21,12 @@ public class SecurePathProcessor_FileAPI_GetName extends PathProcessor {
      * @return true if the path contains only a filename, false otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(String path, ValidationErrorList errors) {
         if (path == null) {
             return false;
         }
         // Validate using File.getName() to ensure it's a valid filename
-        return new File(path).getName().equals(path);
+        return getSanitizedFilePath(path).equals(path);
     }
 
     /**
@@ -37,7 +36,7 @@ public class SecurePathProcessor_FileAPI_GetName extends PathProcessor {
      * @return The filename component only
      */
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(String path) {
         if (path == null) {
             return "";
         }

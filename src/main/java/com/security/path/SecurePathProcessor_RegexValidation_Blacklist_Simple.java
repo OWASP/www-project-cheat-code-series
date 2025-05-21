@@ -1,10 +1,8 @@
 package com.security.path;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.regex.Pattern;
+
+import org.owasp.esapi.ValidationErrorList;
 
 /**
  * This class contains a secure path processing implementation
@@ -25,7 +23,7 @@ public class SecurePathProcessor_RegexValidation_Blacklist_Simple extends PathPr
      * @return true if the path is valid, false otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
         if (path == null) {
             return false;
         }
@@ -38,7 +36,7 @@ public class SecurePathProcessor_RegexValidation_Blacklist_Simple extends PathPr
      * @return The sanitized path
      */
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(java.lang.String path) {
         if (path == null) {
             return "";
         }

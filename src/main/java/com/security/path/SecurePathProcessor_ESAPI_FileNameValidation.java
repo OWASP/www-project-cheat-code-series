@@ -1,6 +1,7 @@
 package com.security.path;
 
 import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.ValidationErrorList;
 
 public class SecurePathProcessor_ESAPI_FileNameValidation extends PathProcessor {
     
@@ -9,7 +10,7 @@ public class SecurePathProcessor_ESAPI_FileNameValidation extends PathProcessor 
     }
 
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(java.lang.String path) {
         if (path == null) {
             return "";
         }
@@ -17,14 +18,13 @@ public class SecurePathProcessor_ESAPI_FileNameValidation extends PathProcessor 
         try {
             // Use ESAPI's getValidFileName with class name as context
             return ESAPI.validator().getValidFileName(this.getClass().getSimpleName(), path, null, false);
-        } catch (Exception e) {
             // If validation fails, return empty string
             return "";
         }
     }
 
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
         if (path == null) {
             return false;
         }

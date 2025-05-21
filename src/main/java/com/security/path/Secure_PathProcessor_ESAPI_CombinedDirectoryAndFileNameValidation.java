@@ -1,10 +1,12 @@
 package com.security.path;
 
-import org.owasp.esapi.ESAPI;
-import org.owasp.esapi.errors.ValidationException;
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.io.File;
+
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.errors.ValidationException;
 
 /**
  * This class contains a secure path processing implementation
@@ -26,7 +28,7 @@ public class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation e
      * @return true if both the directory path and filename are valid, false otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
         if (path == null) {
             return false;
         }
@@ -64,7 +66,7 @@ public class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation e
      * @return The sanitized directory path if valid, empty string otherwise
      */
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(java.lang.String path) {
         if (path == null) {
             return "";
         }

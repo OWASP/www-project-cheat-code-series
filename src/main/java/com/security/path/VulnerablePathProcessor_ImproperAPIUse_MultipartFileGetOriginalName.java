@@ -1,13 +1,9 @@
 package com.security.path;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.owasp.esapi.ValidationErrorList;
+import org.owasp.esapi.errors.ValidationException;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
-import org.apache.commons.fileupload.disk.DiskFileItem;
-import org.apache.commons.io.IOUtils;
 
 /**
  * This class contains a vulnerable path processing implementation
@@ -22,39 +18,49 @@ public class VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalName
     }
 
     /**
-     * Vulnerable method that validates a path by trusting the original filename
+     * Vulnerable method that validates a path using MultipartFile.getOriginalFilename()
      * @param path The path to validate
      * @return true if the path is not null, false otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
-        // Vulnerable: Trusts the original filename without validation
-        return path != null;
+    public boolean isValidFilePath(String path, ValidationErrorList errors) {
+        if (path == null) {
+            return false;
+        }
+        try {
+            var sanitizedFileName = getSanitizedFilePath(path);
+            return sanitizedFileName.equals(path);
+        } catch (ValidationException vex) {
+            errors.addError("Validation with MultipartFile: ", vex);
+            return false;
+        }
     }
 
     /**
-     * Vulnerable method that uses the original filename without sanitization
+     * Vulnerable method that uses the original filename.
+     * MultipartFile.getOriginalFilename() returns the original filename and may contain path information depending on the browser used
+     * https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/multipart/MultipartFile.html#getOriginalFilename()
      * @param path The path to sanitize
      * @return The original filename without any sanitization
      */
     @Override
-    public String sanitizeUserInput(String path) {
-        if (path == null) {
-            return "";
-        }
-        
+    public String getSanitizedFilePath(String path) throws ValidationException {
         try {
-            // Create a real MultipartFile using CommonsMultipartFile            
+            // Create a real MultipartFile using MockMultipartFile            
             MultipartFile multipartFile = this.createMockMultipartFile(path);
             return multipartFile.getOriginalFilename();
         } catch (Exception e) {
-            return path;
+            throw new ValidationException("Failed to sanitize path using MultipartFile.getOriginalFilename()",e.getMessage(), e);
         }
     }
 
-    private MultipartFile createMockMultipartFile(String path) throws Exception {
-        DiskFileItem fileItem = new DiskFileItem("file", "text/plain", false, path, 0, null);
-        fileItem.getOutputStream().write("fake content".getBytes());
-        return new CommonsMultipartFile(fileItem);
+    /**
+     * Creates a mock MultipartFile in memory without writing to disk.
+     * Uses MockMultipartFile which preserves the original filename exactly as provided.
+     * @param path The path to use for the mock file
+     * @return A MultipartFile instance with the specified path
+     */
+    private MultipartFile createMockMultipartFile(String path) {
+        return new MockMultipartFile("file", path, "text/plain", "fake content".getBytes());
     }
 } 

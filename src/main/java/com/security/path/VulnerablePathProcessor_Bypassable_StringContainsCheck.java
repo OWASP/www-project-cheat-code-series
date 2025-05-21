@@ -1,9 +1,6 @@
 package com.security.path;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.owasp.esapi.ValidationErrorList;
 
 /**
  * This class contains a vulnerable path processing implementation
@@ -21,7 +18,7 @@ public class VulnerablePathProcessor_Bypassable_StringContainsCheck extends Path
      * @return false if path contains "../", true otherwise
      */
     @Override
-    public boolean validateUserInput(String path) {
+    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
         // Vulnerable: Only checks for "../" which can be bypassed
         return path != null && !path.contains("../");
     }
@@ -32,7 +29,7 @@ public class VulnerablePathProcessor_Bypassable_StringContainsCheck extends Path
      * @return The original path without any sanitization
      */
     @Override
-    public String sanitizeUserInput(String path) {
+    public String getSanitizedFilePath(java.lang.String path) {
         // Vulnerable: Returns the input with bypassable sanitization
         return path.replace("../", "");
     }
