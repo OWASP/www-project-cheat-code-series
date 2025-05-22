@@ -53,7 +53,8 @@ public class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation e
                 "ESAPI DirectoryPath Validation", 
                 directoryPath, 
                 new File(this.baseDirectory), 
-                false
+                false,
+                errors
             );
         }
 
@@ -66,7 +67,7 @@ public class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation e
      * @return The sanitized directory path if valid, empty string otherwise
      */
     @Override
-    public String getSanitizedFilePath(java.lang.String path) {
+    public String getSanitizedFilePath(java.lang.String path) throws org.owasp.esapi.errors.ValidationException {
         if (path == null) {
             return "";
         }

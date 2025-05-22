@@ -12,13 +12,13 @@ public class ReadFileResult {
      * Indicates whether a path traversal attack was detected during path processing.
      * True if a potential path traversal attack was detected, false otherwise.
      */
-    public boolean IsPathTraversalAttackDetected = false;
+    public boolean isPathTraversalAttackDetected = false;
 
     /**
      * Indicates whether the path was sanitized during processing.
      * True if the path was sanitized, false if it was either valid or sanitization failed.
      */
-    public boolean IsPathSanitized = false;
+    public boolean isPathSanitized = false;
 
     /**
      * The original path provided by the user before any processing.
@@ -29,7 +29,7 @@ public class ReadFileResult {
      * The final processed path that was used to read the file.
      * This path has been validated and optionally sanitized.
      */
-    public Path executedSanitizedFilePath;
+    public Path sanitizedFilePathToReadFrom;
 
     /**
      * The content of the file that was read.

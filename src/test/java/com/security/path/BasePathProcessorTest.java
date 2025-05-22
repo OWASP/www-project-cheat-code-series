@@ -1,18 +1,20 @@
 package com.security.path;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.io.File;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.owasp.esapi.errors.ValidationException;
-import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Path Processor Tests")
 abstract class BasePathProcessorTest {
@@ -63,17 +65,17 @@ abstract class BasePathProcessorTest {
     @Test
     void LegitCase_NormalFileName_ShouldReadFile() throws IOException {
         ReadFileResult result = processor.readFile(LegitimatePathsTestPayloads.SIMPLE_FILE);
-        assertFalse(result.IsPathTraversalAttackDetected);
-        assertFalse(result.IsPathSanitized);
+        assertFalse(result.isPathTraversalAttackDetected);
+        assertFalse(result.isPathSanitized);
         assertEquals(PUBLIC_FILE_CONTENT, result.fileReadResult);
         assertNull(result.fileReadException);
     }
     
     @Test
-    void LegitCase_RelativePath_ShouldReadSubfolderLegitFile() throws IOException {
+    void EdgeLegitCase_RelativePath_ShouldReadSubfolderLegitFile() throws IOException {
         ReadFileResult result = processor.readFile(LegitimatePathsTestPayloads.SUBFOLDER_FILE);
-        assertFalse(result.IsPathTraversalAttackDetected);
-        assertFalse(result.IsPathSanitized);
+        assertFalse(result.isPathTraversalAttackDetected);
+        assertFalse(result.isPathSanitized);
         assertEquals(SUBFOLDER_CONTENT, result.fileReadResult);
         assertNull(result.fileReadException);
     }
@@ -82,9 +84,9 @@ abstract class BasePathProcessorTest {
     void AttackCase_SingleLevelTraversal() {
         ReadFileResult result = processor.readFile(PathTraversalTestPayloads.SINGLE_LEVEL_TRAVERSAL);
         assertNull(result.fileReadResult, PURPLE + "Attack succeeded! Secret file was read! Content: " + result.fileReadResult + RESET);
-        assertTrue(result.IsPathTraversalAttackDetected, "Attack was not detected");
+        assertTrue(result.isPathTraversalAttackDetected, "Attack was not detected");
         assertNotNull(result.fileReadException);        
-        assertTrue(IsOneOfExpectedExceptions(result.fileReadException),
+        assertTrue(isOneOfExpectedExceptions(result.fileReadException),
                   "Got unexpected exception: " + 
                   (result.fileReadException != null ? result.fileReadException.getClass().getSimpleName() : "null"));
     }
@@ -93,9 +95,9 @@ abstract class BasePathProcessorTest {
     void AttackCase_DoubleLevelTraversal() {
         ReadFileResult result = processor.readFile(PathTraversalTestPayloads.DOUBLE_LEVEL_TRAVERSAL);
         assertNull(result.fileReadResult, PURPLE + "Attack succeeded! Secret file was read! Content: " + result.fileReadResult + RESET);
-        assertTrue(result.IsPathTraversalAttackDetected, "Attack was not detected");
+        assertTrue(result.isPathTraversalAttackDetected, "Attack was not detected");
         assertNotNull(result.fileReadException);        
-        assertTrue(IsOneOfExpectedExceptions(result.fileReadException),
+        assertTrue(isOneOfExpectedExceptions(result.fileReadException), 
                   "Got unexpected exception: " + 
                   (result.fileReadException != null ? result.fileReadException.getClass().getSimpleName() : "null"));
     }
@@ -104,20 +106,20 @@ abstract class BasePathProcessorTest {
     void AttackCase_DoubleDotTraversal() {
         ReadFileResult result = processor.readFile(PathTraversalTestPayloads.DOUBLE_DOT_TRAVERSAL);
         assertNull(result.fileReadResult, PURPLE + "Attack succeeded! Secret file was read! Content: " + result.fileReadResult + RESET);
-        assertTrue(result.IsPathTraversalAttackDetected, "Attack was not detected");        
+        assertTrue(result.isPathTraversalAttackDetected, "Attack was not detected");        
         assertNotNull(result.fileReadException);
-        assertTrue(IsOneOfExpectedExceptions(result.fileReadException),
+        assertTrue(isOneOfExpectedExceptions(result.fileReadException),
                   "Got unexpected exception: " + 
                   (result.fileReadException != null ? result.fileReadException.getClass().getSimpleName() : "null"));
     }
     
     @Test
-    void AttackCase_WindowsStylePathTraversal() {
+    void AttackCase_WindowsStylePathTraversal() {   
         ReadFileResult result = processor.readFile(PathTraversalTestPayloads.WINDOWS_STYLE_TRAVERSAL);
         assertNull(result.fileReadResult, PURPLE + "Attack succeeded! Secret file was read! Content: " + result.fileReadResult + RESET);
-        assertTrue(result.IsPathTraversalAttackDetected, "Attack was not detected");
+        assertTrue(result.isPathTraversalAttackDetected, "Attack was not detected");
         assertNotNull(result.fileReadException);
-        assertTrue(IsOneOfExpectedExceptions(result.fileReadException),
+            assertTrue(isOneOfExpectedExceptions(result.fileReadException),
                   "Got unexpected exception: " + 
                   (result.fileReadException != null ? result.fileReadException.getClass().getSimpleName() : "null"));
     }
@@ -126,18 +128,19 @@ abstract class BasePathProcessorTest {
     void MalformedCase_NullCharacterInput() {
         ReadFileResult result = processor.readFile(PathTraversalTestPayloads.NULL_CHARACTER_INJECTION);       
         
-        if (result.IsPathSanitized) {
+        if (result.isPathSanitized) {
             // If path was sanitized, it should have removed the null character
-            assertTrue(result.fileReadResult != null && !result.executedSanitizedFilePath.toString().contains("\0"));
+            assertTrue(result.fileReadResult != null && !result.sanitizedFilePathToReadFrom.toString().contains("\0"));
         } else {
             // If not sanitized, it should throw
             assertNotNull(result.fileReadException);
         }
     }
 
-    private boolean IsOneOfExpectedExceptions(Exception e) {
+    private boolean isOneOfExpectedExceptions(Exception e) {
         return e instanceof UnsupportedOperationException || 
                e instanceof NoSuchFileException ||
+               e instanceof org.owasp.esapi.errors.ValidationException ||
                (e.getCause() != null && e.getCause() instanceof ValidationException);
     }
 } 

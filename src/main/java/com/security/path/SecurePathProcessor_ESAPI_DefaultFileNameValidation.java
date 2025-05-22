@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.owasp.esapi.ESAPI;
 import org.owasp.esapi.ValidationErrorList;
-import org.owasp.esapi.errors.ValidationException;
 
 /**
  * This class contains a secure path processing implementation
@@ -19,7 +18,11 @@ public class SecurePathProcessor_ESAPI_DefaultFileNameValidation extends PathPro
     
     public SecurePathProcessor_ESAPI_DefaultFileNameValidation(String baseDirectory) {
         super(baseDirectory);
+        // ESAPI is designed to throw exception on attack payload rather than sanitizing it in getValidFileName (while it still returns a canonicalized filename)
+        //this.canSanitize = false;
     }
+
+    
     
     /**
      * Method that validates a path using ESAPI's isValidFileName validator
@@ -32,7 +35,7 @@ public class SecurePathProcessor_ESAPI_DefaultFileNameValidation extends PathPro
             return false;
         }
         // Use ESAPI's isValidFileName validator with allowNull=false
-        return ESAPI.validator().isValidFileName("ESAPI FileName Validation", path, false);
+        return ESAPI.validator().isValidFileName("ESAPI FileName Validation", path, false, errors);
     }
 
     /**
@@ -42,14 +45,15 @@ public class SecurePathProcessor_ESAPI_DefaultFileNameValidation extends PathPro
      * @return The sanitized filename if valid, empty string otherwise
      */
     @Override
-    public String getSanitizedFilePath(java.lang.String path) {
+    public String getSanitizedFilePath(java.lang.String path) throws org.owasp.esapi.errors.ValidationException {
         if (path == null) {
             return "";
         }
         try {
-            return ESAPI.validator().getValidFileName("ESAPI FileName Validation", path, ALLOWED_EXTENSIONS, false);
-        } catch (ValidationException e) {
-            throw new RuntimeException("Validation failed: " + e.getMessage(), e);
+            var sanitizedFileName = ESAPI.validator().getValidFileName("ESAPI FileName Validation", path, ALLOWED_EXTENSIONS, false);
+            return sanitizedFileName;
+        } catch (Exception e) {
+            throw new org.owasp.esapi.errors.ValidationException("Failed to sanitize path using ESAPI.getValidFileName()", e.getMessage(), e);
         }
     }
 } 

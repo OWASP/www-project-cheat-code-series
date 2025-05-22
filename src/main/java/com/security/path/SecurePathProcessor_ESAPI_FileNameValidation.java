@@ -10,17 +10,12 @@ public class SecurePathProcessor_ESAPI_FileNameValidation extends PathProcessor 
     }
 
     @Override
-    public String getSanitizedFilePath(java.lang.String path) {
+    public String getSanitizedFilePath(java.lang.String path) throws org.owasp.esapi.errors.ValidationException {
         if (path == null) {
             return "";
         }
-        
-        try {
-            // Use ESAPI's getValidFileName with class name as context
-            return ESAPI.validator().getValidFileName(this.getClass().getSimpleName(), path, null, false);
-            // If validation fails, return empty string
-            return "";
-        }
+        // Use ESAPI's getValidFileName with class name as context
+        return ESAPI.validator().getValidFileName(this.getClass().getSimpleName(), path, null, false);        
     }
 
     @Override

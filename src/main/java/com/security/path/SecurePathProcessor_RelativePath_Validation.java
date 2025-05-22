@@ -14,7 +14,7 @@ public class SecurePathProcessor_RelativePath_Validation extends PathProcessor {
     
     public SecurePathProcessor_RelativePath_Validation(String baseDirectory) {
         super(baseDirectory);
-        this.CanSanitize = false;
+        this.canSanitize = false;
     }
     
 

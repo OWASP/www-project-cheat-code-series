@@ -45,6 +45,9 @@ public class VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalName
      */
     @Override
     public String getSanitizedFilePath(String path) throws ValidationException {
+        if (path == null || path.isEmpty()) {
+            throw new ValidationException("Input directory path required", "Input directory path required");
+        }
         try {
             // Create a real MultipartFile using MockMultipartFile            
             MultipartFile multipartFile = this.createMockMultipartFile(path);

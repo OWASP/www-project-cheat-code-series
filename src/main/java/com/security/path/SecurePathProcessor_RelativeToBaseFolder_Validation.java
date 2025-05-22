@@ -14,7 +14,7 @@ public class SecurePathProcessor_RelativeToBaseFolder_Validation extends PathPro
     
     public SecurePathProcessor_RelativeToBaseFolder_Validation(String baseDirectory) {
         super(baseDirectory);
-        this.CanSanitize = false;
+        this.canSanitize = false;
     }
 
     /**
