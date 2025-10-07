@@ -1,0 +1,24 @@
+audience:
+  - breaker
+  - builder
+leaders:
+  - name: Aleksei Ryzhkov
+    email: aleksei.ryzhkov@owasp.org
+    github: Aleks-Ry
+  - name: Vladimir Fedotov
+    email: aleksei.ryzhkov@owasp.org
+  - name: Kanat Nurzhanov
+    email: aleksei.ryzhkov@owasp.org
+level: 2
+name: OWASP Cheat Code Series
+pitch: A very brief, one-line description of your project
+repositories:
+  - name: www-project-cheat-code-series
+    url: https://github.com/OWASP/www-project-cheat-code-series
+    description: OWASP Foundation web repository
+tags:
+  - example-tag
+  - custom-tag-1
+  - custom-tag-2
+type: documentation
+website: https://owasp.org/www-project-cheat-code-series
