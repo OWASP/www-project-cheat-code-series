@@ -4,3 +4,7 @@
 _site/
 target/
 .vscode/settings.json
+
+# Claude Code — personal overrides (shared CLAUDE.md and .claude/settings.json are committed)
+CLAUDE.local.md
+.claude/settings.local.json
