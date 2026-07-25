@@ -63,7 +63,7 @@ ESAPI reads [src/main/resources/esapi/](src/main/resources/esapi/) (`ESAPI.prope
 
 `Main.createProcessors()` must list every processor that has a test class — keep the two in sync, since the README results table is generated from the test run and the console walkthrough is meant to match it.
 
-Known wart: `SecurePathProcessor_ESAPI_FileNameValidation` calls `getValidFileName(..., null, false)`. ESAPI rejects a null extension list outright, so its sanitizer can never return — every non-trivial input ends as `ValidationException: Internal Error`. It passes the attack cases by failing closed, not by sanitizing.
+The two ESAPI filename processors reach identical verdicts by different routes, and the distinction is the point of having both: `SecurePathProcessor_ESAPI_FileNameValidation` takes its allowed extensions from `ESAPI.securityConfiguration().getAllowedFileExtensions()` (config-driven), while `SecurePathProcessor_ESAPI_DefaultFileNameValidation` hard-codes the list in Java. Note that `getValidFileName` rejects a null/empty extension list outright — passing `null` yields `ValidationException: Internal Error` and silently disables the sanitizer rather than allowing any extension.
 
 ## CI
 
