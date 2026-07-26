@@ -70,8 +70,11 @@ public class Main {
             new SecurePathProcessor_StringContains_Simple(BASE_DIR),
             new SecurePathProcessor_RegexValidation_Blacklist_Simple(BASE_DIR),
             new SecurePathProcessor_RegexValidation_Blacklist_Extended(BASE_DIR),
+            new SecurePathProcessor_RegexValidation_Whitelist_AlphaNumericDot(BASE_DIR),
             new SecurePathProcessor_RelativePath_Validation(BASE_DIR),
+            new SecurePathProcessor_RelativeToBaseFolder_Validation(BASE_DIR),
             new SecurePathProcessor_FileAPI_GetName(BASE_DIR),
+            new SecurePathProcessor_ESAPI_FileNameValidation(BASE_DIR),
             new SecurePathProcessor_ESAPI_DefaultFileNameValidation(BASE_DIR),
             new Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation(BASE_DIR)
         };

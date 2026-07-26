@@ -6,10 +6,12 @@ leaders:
     email: aleksei.ryzhkov@owasp.org
     github: Aleks-Ry
   - name: Vladimir Fedotov
-    email: aleksei.ryzhkov@owasp.org
+    email: vladimir.fedotov@owasp.org
   - name: Kanat Nurzhanov
-    email: aleksei.ryzhkov@owasp.org
+    email: kanat.nurzhanov@owasp.org
 level: 2
+license:
+  - Apache-2.0
 name: OWASP Cheat Code Series
 pitch: A very brief, one-line description of your project
 repositories:
@@ -20,5 +22,5 @@ tags:
   - example-tag
   - custom-tag-1
   - custom-tag-2
-type: documentation
+type: code
 website: https://owasp.org/www-project-cheat-code-series

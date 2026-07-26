@@ -4,7 +4,7 @@ layout: col-sidebar
 title: OWASP Cheat Code Series
 tags: example-tag
 level: 2
-type: documentation
+type: code
 pitch: A very brief, one-line description of your project
 
 ---
