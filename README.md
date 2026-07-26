@@ -119,4 +119,4 @@ Java 11+, JUnit 5, Mockito, Spring Web (for the multipart misuse example), and O
 
 ## License
 
-See [LICENSE.md](LICENSE.md).
+Licensed under the [Apache License 2.0](LICENSE).
