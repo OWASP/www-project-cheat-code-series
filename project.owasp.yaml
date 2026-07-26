@@ -6,9 +6,9 @@ leaders:
     email: aleksei.ryzhkov@owasp.org
     github: Aleks-Ry
   - name: Vladimir Fedotov
-    email: aleksei.ryzhkov@owasp.org
+    email: vladimir.fedotov@owasp.org
   - name: Kanat Nurzhanov
-    email: aleksei.ryzhkov@owasp.org
+    email: kanat.nurzhanov@owasp.org
 level: 2
 license:
   - Apache-2.0
