@@ -1,6 +1,22 @@
-package org.owasp.cheatcode.pathtraversal;  
+package org.owasp.cheatcode.pathtraversal;
+
+import org.owasp.cheatcode.harness.Expectations;
+
+import static org.owasp.cheatcode.harness.Expectations.on;
+import static org.owasp.cheatcode.harness.Outcome.READ_OK;
+import static org.owasp.cheatcode.harness.Outcome.REJECTED_BY_RUNTIME;
+import static org.owasp.cheatcode.harness.Outcome.SANITIZED_MISS;
+import static org.owasp.cheatcode.harness.Platform.WINDOWS;
+import static org.owasp.cheatcode.pathtraversal.Payload.ATTACK_DOUBLE_DOT_TRAVERSAL;
+import static org.owasp.cheatcode.pathtraversal.Payload.ATTACK_DOUBLE_LEVEL_TRAVERSAL;
+import static org.owasp.cheatcode.pathtraversal.Payload.ATTACK_SINGLE_LEVEL_TRAVERSAL;
+import static org.owasp.cheatcode.pathtraversal.Payload.ATTACK_WINDOWS_STYLE_TRAVERSAL;
+import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
+import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
+import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
 class SecurePathProcessor_RegexValidation_Blacklist_SimpleTest extends BasePathProcessorTest {
+
     @Override
     PathProcessor createProcessor(String baseDir) {
         return new SecurePathProcessor_RegexValidation_Blacklist_Simple(baseDir);
@@ -10,4 +26,33 @@ class SecurePathProcessor_RegexValidation_Blacklist_SimpleTest extends BasePathP
     String getProcessorName() {
         return "Secure Path Processor (Regex Validation Simple)";
     }
-} 
+
+    @Override
+    String describe() {
+        return "The same blacklist as String Contains Simple, expressed as the regex "
+             + "`\\.\\.|[/\\\\]`. Identical verdicts in every cell, which is the useful result: "
+             + "moving a check into a regex changes its readability, not its coverage.";
+    }
+
+    @Override
+    Expectations expected() {
+        return Expectations.builder()
+            .expect(LEGIT_SIMPLE_FILE, READ_OK)
+            .expect(LEGIT_SUBFOLDER_FILE, SANITIZED_MISS,
+                "Separators stripped, leaving a filename that does not exist. Same cost as the "
+              + "string-contains version.")
+            .expect(ATTACK_SINGLE_LEVEL_TRAVERSAL, SANITIZED_MISS)
+            .expect(ATTACK_DOUBLE_LEVEL_TRAVERSAL, SANITIZED_MISS)
+            .expect(ATTACK_DOUBLE_DOT_TRAVERSAL, SANITIZED_MISS,
+                "The pattern matches bare `..`, so the padded-dots bypass does not apply.")
+            .expect(MALFORMED_NULL_BYTE, REJECTED_BY_RUNTIME,
+                "The pattern says nothing about control characters, so the JDK rejects the path "
+              + "instead. Contrast the Extended blacklist, which adds an explicit NUL check and "
+              + "therefore handles this itself.")
+            .expect(ATTACK_WINDOWS_STYLE_TRAVERSAL,
+                on(WINDOWS, SANITIZED_MISS,
+                   "Backslash is in the character class. Declared for WINDOWS only; POSIX "
+                 + "behaviour not yet observed."))
+            .build();
+    }
+}

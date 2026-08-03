@@ -71,6 +71,17 @@
             <version>4.0.1</version>
             <scope>compile</scope>
         </dependency>
+        <!--
+            Test scope only. Used by the result recorder and the report generator, never by the
+            example implementations in src/main - those stay dependency-light on purpose, since
+            they are the thing developers are meant to read.
+        -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -80,7 +91,13 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
-                    <testFailureIgnore>true</testFailureIgnore>
+                    <!--
+                        No testFailureIgnore. A red test now means reality diverged from the
+                        declared matrix - either a change moved an implementation, or a payload
+                        has never been declared - and that must fail the build. The demonstration
+                        that a payload lands is carried by the recorded SECRET_DISCLOSED outcome
+                        and the generated report, not by a failing assertion.
+                    -->
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
@@ -93,6 +110,24 @@
                 <configuration>
                     <mainClass>${exec.mainClass}</mainClass>
                 </configuration>
+                <executions>
+                    <!--
+                        mvn exec:java@report - builds the HTML matrix and the README table from
+                        the JSON emitted by the last test run. Test scope because the whole
+                        reporting harness lives under src/test.
+                        Not bound to a lifecycle phase: it must run after `mvn test`, not during it.
+                    -->
+                    <execution>
+                        <id>report</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.owasp.cheatcode.report.ReportGenerator</mainClass>
+                            <classpathScope>test</classpathScope>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

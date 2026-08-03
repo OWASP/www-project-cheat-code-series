@@ -14,24 +14,40 @@ The point of the PoC is *comparison*: a developer should be able to look at the 
 ## Commands
 
 ```bash
-mvn test                                          # all tests
+mvn clean test                                    # all tests; green when reality matches the declared matrix
 mvn test -Dtest=SecurePathProcessor_FileAPI_GetNameTest   # one test class
 mvn test -Dtest='Vulnerable*Test'                 # subset by pattern
 mvn test -Dtest=Foo#AttackCase_DoubleDotTraversal # one test method
+mvn exec:java@report                              # build target/report/index.html + results-table.md
 mvn exec:java -Dexec.mainClass=org.owasp.cheatcode.pathtraversal.Main   # console demo over secureStorage/ and pwnStorage/
 bundle exec jekyll serve                          # site preview (Gemfile is gitignored; github-pages gem)
 ```
 
-Java 11, JUnit 5, Mockito, OWASP ESAPI 2.6. There is no linter or formatter configured. VS Code launch configs for `Main` and the current file are in [.vscode/launch.json](.vscode/launch.json).
+Java 11, JUnit 5, Mockito, OWASP ESAPI 2.6, Gson (test scope only). There is no linter or formatter configured. VS Code launch configs for `Main` and the current file are in [.vscode/launch.json](.vscode/launch.json).
 
-## Test failures are the deliverable, not a bug
+## The matrix is the report; the suite guards it
 
-Surefire is configured with `testFailureIgnore=true` ([pom.xml:83](pom.xml#L83)), so `mvn test` exits 0 even when assertions fail. **Never "fix" a failing test by loosening `BasePathProcessorTest`** — the failures are the report. As of the last run: 98 tests, 22 failures, in two meaningful groups.
+This changed in August 2026 — see [.design_docs/test-outcome-matrix.md](.design_docs/test-outcome-matrix.md) for the full rationale, including what was rejected. Anything you remember about `testFailureIgnore` and "22 expected failures" is obsolete.
 
-- **Vulnerable processors fail the `AttackCase_*` tests.** That failure *is* the demonstration that the payload lands (`Attack succeeded! CONFIDENTIAL DATA disclosed!`). A vulnerable processor that passes everything means the harness stopped reproducing the vulnerability.
-- **Most secure processors fail `EdgeLegitCase_RelativePath_ShouldReadSubfolderLegitFile`.** They block traversal but also reject the legitimate `SomeSubFolder/sublegit.txt` case — the usability cost of a filename-only defence. Only [SecurePathProcessor_RelativePath_Validation](src/main/java/org/owasp/cheatcode/pathtraversal/SecurePathProcessor_RelativePath_Validation.java) and [SecurePathProcessor_RelativeToBaseFolder_Validation](src/main/java/org/owasp/cheatcode/pathtraversal/SecurePathProcessor_RelativeToBaseFolder_Validation.java) currently pass all seven.
+Each test class declares, per payload, what its implementation does. The suite compares that declaration against what actually happens. **`mvn test` is green — 98 tests, 0 failures — and a red test is a real signal**, one of:
 
-When changing an implementation, diff the before/after failure set rather than chasing a green run.
+- **`MISMATCH`** — an implementation moved. Either a change altered its behaviour, or the declaration was wrong.
+- **`UNDECLARED`** — a cell nobody has recorded an expectation for. The failure message prints the observed outcome and the exact `.expect(...)` line to add.
+
+Green does **not** mean "nothing is vulnerable". A vulnerable processor that discloses the secret is a *passing* test, because `SECRET_DISCLOSED` is what it was declared to do. The demonstration is carried by the recorded outcome and the generated report, not by a failing assertion.
+
+> **Never edit an expectation to make a run green.** Change one only with the evidence — the matrix diff is the reviewable artifact. This replaces the old rule about not loosening `BasePathProcessorTest`.
+
+### The outcome vocabulary
+
+[Outcome](src/test/java/org/owasp/cheatcode/harness/Outcome.java) is deliberately richer than pass/fail, because pass/fail cannot distinguish a rejection from a silent rewrite. Two values matter most:
+
+- **`UNDETECTED_MISS`** — the implementation did not detect the payload; the read failed only because `../` from the base directory lands one level short of `pwnStorage/`. A near miss, never a defence.
+- **`REJECTED_BY_RUNTIME`** — the JDK refused the path (`InvalidPathException` on an embedded NUL), not the implementation. Seven of fourteen implementations score this on the null-byte payload; the old pass/fail table showed all fourteen as clean.
+
+[Verdict](src/test/java/org/owasp/cheatcode/harness/Verdict.java) interprets an outcome given the payload's `PayloadKind` — the same outcome means opposite things for a legitimate input and an attack. Verdict colours the report; test pass/fail is orthogonal.
+
+Classification lives entirely in [OutcomeClassifier](src/test/java/org/owasp/cheatcode/pathtraversal/OutcomeClassifier.java) — one function, so every cell is classified identically. Order matters there: disclosure is checked first.
 
 ## Architecture of the PoC
 
@@ -41,15 +57,23 @@ When changing an implementation, diff the before/after failure set rather than c
 - `getSanitizedFilePath(input)` — only reached when validation failed **and** the protected `canSanitize` flag is true. Implementations that reject rather than repair set `canSanitize = false` in their constructor, which turns a detected attack into `UnsupportedOperationException` instead of a second attempt.
 - `joinPaths(base, input)` is `protected` so a vulnerable variant can override it to demonstrate unsafe concatenation (see [VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat](src/main/java/org/owasp/cheatcode/pathtraversal/VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat.java)).
 
-Every outcome is recorded on [ReadFileResult](src/main/java/org/owasp/cheatcode/pathtraversal/ReadFileResult.java) — public mutable fields, deliberately: tests assert on `isPathTraversalAttackDetected`, `isPathSanitized`, `fileReadResult`, `fileReadException` rather than on thrown exceptions, so a processor can silently succeed at an attack and still be observable.
+Every outcome is recorded on [ReadFileResult](src/main/java/org/owasp/cheatcode/pathtraversal/ReadFileResult.java) — public mutable fields, deliberately: `isPathTraversalAttackDetected`, `isPathSanitized`, `fileReadResult` and `fileReadException` are observed rather than exceptions being caught, so a processor can silently succeed at an attack and still be visible. `OutcomeClassifier` reads all four to decide the cell's `Outcome`; tests assert on that, never on the raw fields.
 
 Class names are the documentation. The pattern is `{Vulnerable|Secure}PathProcessor_{Technique}_{Variant}` — keep it, since the comparison table in the README and the test output are read by name.
 
 ### Test harness
 
-[BasePathProcessorTest](src/test/java/org/owasp/cheatcode/pathtraversal/BasePathProcessorTest.java) holds all seven test cases; each concrete test class is ~10 lines that only override `createProcessor(baseDir)` and `getProcessorName()`. **Adding a new implementation means adding one such subclass — never new test methods.** New attack payloads go in [PathTraversalTestPayloads](src/test/java/org/owasp/cheatcode/pathtraversal/PathTraversalTestPayloads.java) (constants only) with a matching `@Test` in the base class, so every implementation is scored against it at once.
+`src/main` is the exhibit — only the implementations a developer is meant to read. The harness and report generator are **test scope**: [org/owasp/cheatcode/harness/](src/test/java/org/owasp/cheatcode/harness/) (generic: `Outcome`, `Verdict`, `Platform`, `Expectations`, `CellResult`, `ResultRecorder`) and [org/owasp/cheatcode/report/](src/test/java/org/owasp/cheatcode/report/). Keep it that way — do not add report machinery to `src/main`.
 
-`@TempDir` builds this layout per test, which is why single-level traversal is *not* enough to reach the secret and double-level is:
+[BasePathProcessorTest](src/test/java/org/owasp/cheatcode/pathtraversal/BasePathProcessorTest.java) holds all seven test methods; each is a one-line call to `assertCell(Payload.X)`. A concrete test class overrides `createProcessor`, `getProcessorName`, `describe` and `expected` — and **never adds test methods**.
+
+**Explicit `@Test` methods, not `@TestFactory` or `@ParameterizedTest`.** This is a deliberate rejection, not an oversight: stepping through one case in the VS Code debugger is the project's best learning tool, and dynamic tests debug badly. `assertCell` keeps `result`, `actual` and `expectation` as separate locals rather than chaining, so a single step-over shows each value in turn. Do not "tidy" that into a chain.
+
+New payloads go in [Payload](src/test/java/org/owasp/cheatcode/pathtraversal/Payload.java) with a matching `@Test` in the base class. **Payload strings must be literals** — `LEGIT_SUBFOLDER_FILE` was previously built with `File.separator`, which silently made it a different payload per platform. Never reintroduce that.
+
+Adding an implementation or a payload: run it first, read the `UNDECLARED` failures (which print the observed outcome and the line to add), check each observed outcome is actually correct, then declare it. An expectation written before the run is a guess.
+
+[PathTraversalFixture](src/test/java/org/owasp/cheatcode/pathtraversal/PathTraversalFixture.java) builds this layout per test under `@TempDir`, which is why single-level traversal is *not* enough to reach the secret and double-level is:
 
 ```
 tempDir/SecureStorage/baseWorkingDirectory/legit.txt   <- baseDir passed to the processor
@@ -58,6 +82,12 @@ tempDir/pwnStorage/secret.txt                          <- "Attack succeeded! CON
 ```
 
 The committed [secureStorage/](secureStorage/) and [pwnStorage/](pwnStorage/) directories mirror this for `Main`, which resolves `secureStorage/baseDir` relative to the working directory — run it from the repo root.
+
+### Reporting and platforms
+
+Each cell writes one JSON file to `target/cheatcode-results/<platform>/`. `mvn exec:java@report` reads every platform directory it finds and emits `target/report/index.html` (self-contained, no CDN) plus `results-table.md`, which is pasted into the README — so the published table cannot drift from what the code does. Regenerate and paste it whenever the matrix changes.
+
+Only Windows results exist so far. Cells known to be platform-dependent (the `..\..\` payload) are declared with `on(WINDOWS, ...)` specifically, so a Linux run reports them as `UNDECLARED` rather than as regressions. Declaring an outcome for a platform nobody has run on is guessing — don't.
 
 ESAPI reads [src/main/resources/esapi/](src/main/resources/esapi/) (`ESAPI.properties`, `validation.properties`); `Main.initializeESAPI()` points the resource directory there explicitly. Changing `Validator.FileName` or `HttpUtilities.ApprovedUploadExtensions` changes the pass/fail verdict of the ESAPI-based processors.
 
