@@ -20,14 +20,52 @@ public class Main {
     
     /** Test inputs to evaluate different command execution scenarios */
     private static final String[] TEST_INJECTION_INPUTS = {
-        "",                              // Valid command
-        " & ",          // Command chaining attempt
-                         // Command separator injection
-        " && ",              // Logical AND injection
-        " || ",                 // Logical OR injection
-        " | ",       // Pipe injection
-        //" > malicious.txt && echo INJECTION_SUCCESSFUL",   // Output redirection injection
-        null                                // Null input
+        "",                                    // Valid command (baseline)
+
+        // Command chaining
+        " & ",                                // Basic chaining
+        " && ",                               // Logical AND
+        " || ",                               // Logical OR
+        "; ",                                 // Command separator (Unix/Windows)
+
+        // Pipe operations
+        " | ",                                // Basic pipe
+        " |& ",                               // Pipe stderr and stdout (bash)
+
+        // Redirection attacks
+        " > evil.txt",                        // Output redirection
+        " >> evil.txt",                       // Append redirection
+        " < C:\\Windows\\System32\\drivers\\etc\\hosts", // Input redirection (Windows)
+        " 2> error.log",                      // Error redirection
+
+        // Subcommand execution
+        "; $(whoami)",                        // Command substitution (Unix)
+        "; `whoami`",                         // Backtick substitution (Unix)
+        " & for /f %i in ('whoami') do echo %i", // Windows for loop
+
+        // Windows-specific
+        " & dir",                             // Windows directory listing
+        " && net user",                       // Windows user enumeration
+        " | findstr \"admin\"",               // Windows string search
+        " & echo %CD%",                       // Windows current directory
+        " & echo %USERNAME%",                 // Windows username
+
+        // Encoding/obfuscation attempts
+        "%26%26",                             // URL encoded &&
+        "%3B",                                // URL encoded ;
+        "\n",                                 // Newline injection
+        "\r\n",                               // CRLF injection
+
+        // Multi-command attempts
+        "; echo injection1 && echo injection2", // Multiple commands
+        " & echo %CD% & echo %USERNAME%",     // Windows environment vars
+        " && timeout 1 >nul",                // Windows timing attack
+
+        // File system exploration
+        " & dir C:\\",                        // Root directory listing
+        " & type C:\\Windows\\System32\\drivers\\etc\\hosts", // File content reading
+
+        null                                  // Null input
     };
 
     /** Command to test for successful injection */
@@ -41,6 +79,8 @@ public class Main {
 
     private static String ExpectedInjectionCommandExecutionResult = "";
 
+    private static boolean isWindows = false;
+
     /**
      * Main entry point for the command execution demonstration.
      * @param args Command line arguments (not used)
@@ -51,10 +91,13 @@ public class Main {
             return;
         }
 
+        isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+
         if(!InitializeExpectedInjectionResult()) {
             System.err.println("Failed to initialize expected injection result. Exiting...");
             return;
         }
+        
 
         CommandProcessor[] processors = createProcessors();
         runTests(processors);
@@ -104,8 +147,8 @@ public class Main {
     private static CommandProcessor[] createProcessors() {
         return new CommandProcessor[] {
             new VulnerableCommandProcessor_Default_NoChecks(),
-            new VulnerableCommandProcessor_Java_ProcessBuilder()
-            // Secure and other vulnerable implementations can be added here
+            new VulnerableCommandProcessor_Java_ProcessBuilder(),
+            new SecureCommandProcessor_ProcessBuilder_Whitelist()
         };
     }
 
@@ -141,20 +184,32 @@ public class Main {
     private static void handleExecutionResult(CommandExecutionResult result) {
         if (result.hasError()) {
             System.out.println("Execution failed: " + result.executionException.toString());
-        } else if (result.executionResult != null)
-        {
-            if (result.executionResult.contains(ExpectedInjectionCommandExecutionResult)) {
+        } else if (result.executionResult != null) {
+            boolean injectionDetected = false;
+
+            // Check for successful command injection indicators
+            if (result.executionResult.contains(ExpectedInjectionCommandExecutionResult) ||
+                result.executionResult.contains("Volume in drive") ||  // dir command output
+                result.executionResult.contains("Directory of") ||     // dir command output
+                result.executionResult.contains("User accounts for") || // net user output
+                result.executionResult.toLowerCase().contains("administrator") || // admin user detection
+                result.executionResult.contains("injection1") ||       // multi-command test
+                result.executionResult.contains("injection2") ||       // multi-command test
+                (result.executionResult.contains("C:\\") && !result.executionResult.contains(LEGITIMATE_USER_INPUT))) {
+                injectionDetected = true;
+            }
+
+            if (injectionDetected) {
                 System.out.println(RED + "INJECTION SUCCEEDED" + RESET);
             }
 
-            if(result.executionResult.contains(LEGITIMATE_USER_INPUT)) {
-                System.out.println(GREEN + "Legitimate user input succeeded: " + RESET);
-            }
-            else {
+            if (result.executionResult.contains(LEGITIMATE_USER_INPUT)) {
+                System.out.println(GREEN + "Legitimate user input succeeded" + RESET);
+            } else {
                 System.out.println(YELLOW + "Execution result does not contain legitimate user input" + RESET);
             }
 
-            System.out.println(result.executionResult);
+            System.out.println("Output: " + result.executionResult);
         } else {
             System.out.println("No error and no result");
         }
