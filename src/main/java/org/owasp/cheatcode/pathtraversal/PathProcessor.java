@@ -1,33 +1,36 @@
 package org.owasp.cheatcode.pathtraversal;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import org.owasp.esapi.ValidationErrorList;
 
 /**
- * Abstract base class for path processing implementations.
- * Defines the contract for path processing operations and provides common functionality
- * for handling file paths securely. This class implements the core logic for detecting
- * and handling path traversal attacks.
+ * The one thing every path traversal implementation here has in common: it is handed a string
+ * that came from a user, and is expected to return the contents of a file.
+ *
+ * <p>This class contains no defence of its own, deliberately. It exists to run
+ * {@link #getResource(String)} and write down what happened, so that a reader can open any single
+ * implementation and see the whole technique in one method - the check, the repair if there is
+ * one, the join, and the read - without reassembling it from a base-class pipeline.
+ *
+ * <p>Not thread-safe: one {@link #readFile(String)} call at a time per instance. The test harness
+ * creates a fresh processor per test and the console demo is single-threaded.
  */
 public abstract class PathProcessor {
 
     /**
-     * The base directory of PathProcessor, that all paths will be relative to.
+     * The directory this processor is allowed to serve files from.
      */
     protected final String baseDirectory;
-    
+
     /**
-     * Flag indicating whether path sanitization is supported by this processor.
-     * When true, invalid paths will be sanitized instead of rejected.
+     * Where {@link #readFrom(Path)} last read from. Per-call state, reset by {@link #readFile}.
      */
-    protected boolean canSanitize = true;
+    private Path resolvedPath;
 
     /**
      * Constructs a new PathProcessor with the specified base directory.
-     * 
+     *
      * @param baseDirectory The root directory that all paths will be relative to
      */
     protected PathProcessor(String baseDirectory) {
@@ -35,109 +38,71 @@ public abstract class PathProcessor {
     }
 
     /**
-     * Validates if the provided path is safe to use.
-     * This method should be implemented by concrete classes to provide specific
-     * validation logic based on their security requirements.
-     * 
-     * @param userInput The path to validate
-     * @param errors List to collect any validation errors encountered during path validation
-     * @return true if the path is valid and safe to use, false otherwise
+     * Turns user input into file content: the whole technique this implementation demonstrates.
+     *
+     * <p>An implementation validates, repairs or refuses however it likes, then calls
+     * {@link #readFrom(Path)} with the path it settled on. Refusing means throwing - the caller
+     * gets an exception instead of content.
+     *
+     * <p>Called only with a non-null, non-empty input; {@link #readFile(String)} rejects those
+     * first, so no implementation needs a guard for them.
+     *
+     * <p>Declared {@code throws Exception} so that all fourteen implementations share one
+     * signature and differ only in their body - several of them throw ESAPI's checked
+     * {@code ValidationException}, and narrowing per class would make the files harder to compare.
+     *
+     * @param userInput The untrusted string, exactly as received
+     * @return The content of the file this implementation decided to serve
+     * @throws Exception If the implementation refuses the input, or the read fails
      */
-    public abstract boolean isValidFilePath(String userInput, ValidationErrorList errors);
+    public abstract String getResource(String userInput) throws Exception;
 
     /**
-     * Sanitizes the provided path to make it safe for use.
-     * This method should be implemented by concrete classes to provide specific
-     * sanitization logic based on their security requirements.
-     * 
-     * @param userProvidedFileName The path to sanitize
-     * @return A sanitized version of the path that is safe to use
+     * Reads the file the implementation settled on, and records which one that was.
+     *
+     * <p>The only sanctioned route to content. Reading around it - calling
+     * {@code Files.readString} directly - leaves the report with no idea which file was served,
+     * and the harness derives "was the input rewritten?" from exactly this path.
+     *
+     * @param resolved The path this implementation decided to read
+     * @return The content of that file
+     * @throws IOException If the file cannot be read
      */
-    public abstract String getSanitizedFilePath(String userProvidedFileName) throws org.owasp.esapi.errors.ValidationException;
-
+    protected final String readFrom(Path resolved) throws IOException {
+        this.resolvedPath = resolved;
+        return Files.readString(resolved);
+    }
 
     /**
-     * Reads the content of a file after validating and processing its path.
-     * This method handles the complete file reading process including path validation,
-     * sanitization, and error handling.
-     * 
+     * Runs {@link #getResource(String)} and <em>reports</em> what happened rather than throwing.
+     *
+     * <p>Observing instead of propagating is the point: a processor that silently succeeds at an
+     * attack has to be as visible as one that fails loudly, and a caller that only ever sees
+     * exceptions cannot tell the two apart.
+     *
      * @param userProvidedFileName The file name provided by the user
-     * @return ReadFileResult containing the file content and any processing results
+     * @return ReadFileResult recording the path resolved, the content read, and any exception
      */
-    public ReadFileResult readFile(String userProvidedFileName) {
-        ReadFileResult result = calculateTargetPath(userProvidedFileName);
+    public final ReadFileResult readFile(String userProvidedFileName) {
+        this.resolvedPath = null;
 
-        if (result.fileReadException != null) {
+        ReadFileResult result = new ReadFileResult();
+        result.baseDirectory = this.baseDirectory;
+        result.userProvidedPath = userProvidedFileName;
+
+        if (userProvidedFileName == null || userProvidedFileName.isEmpty()) {
+            result.fileReadException =
+                    new IllegalArgumentException("Input path cannot be null or empty");
             return result;
         }
 
         try {
-            result.fileReadResult = Files.readString(result.sanitizedFilePathToReadFrom);
+            result.fileReadResult = getResource(userProvidedFileName);
         } catch (Exception e) {
             result.fileReadException = e;
         }
 
-        return result;
-    }    
-
-    /**
-     * Calculates the target path by validating and optionally sanitizing the user input.
-     * This method implements the core path traversal detection and handling logic.
-     * 
-     * @param userInput The user-provided path to process
-     * @return ReadFileResult containing the processed path and any validation/sanitization results
-     */
-    private ReadFileResult calculateTargetPath(String userInput) {
-        ReadFileResult result = new ReadFileResult();
-        
-        if (userInput == null || userInput.isEmpty()) {
-            result.fileReadException = new org.owasp.esapi.errors.ValidationException(
-                "Input path required",
-                "Input path cannot be null or empty"
-            );
-            return result;
-        }
-        
-        result.userProvidedPath = userInput;
-        try {
-            ValidationErrorList errors = new ValidationErrorList();
-
-            if (isValidFilePath(userInput, errors)) {
-                // No Path traversal attack detected
-                result.isPathTraversalAttackDetected = false;
-                result.isPathSanitized = false;
-                result.sanitizedFilePathToReadFrom = this.joinPaths(this.baseDirectory, userInput);
-            } else {
-                // Path traversal attack detected
-                result.isPathTraversalAttackDetected = true;
-                if (canSanitize) {
-                    // Sanitize the input
-                    String sanitizedInput = getSanitizedFilePath(userInput);
-                    result.isPathSanitized = true;
-                    result.sanitizedFilePathToReadFrom = this.joinPaths(this.baseDirectory, sanitizedInput);
-                } else {
-                    // Sanitization is not supported
-                    result.isPathSanitized = false;
-                    result.fileReadException = new UnsupportedOperationException(
-                            "PathTraversal is detected. Sanitization is not supported for this processor");
-                }
-            }
-        }
-        catch (Exception e) {
-            result.fileReadException = e;
-        }
+        result.resolvedPath = this.resolvedPath;
         return result;
     }
-
-    /**
-     * Safely joins two paths using the system's path separator.
-     * This method ensures proper path concatenation.
-     * 
-     * @param basePath The base directory path
-     * @param userInput The user-provided path to append
-     * @return A Path object representing the joined paths
-     */
-    protected Path joinPaths(String basePath, String userInput) {
-        return Paths.get(basePath, userInput);
-    }    
 }

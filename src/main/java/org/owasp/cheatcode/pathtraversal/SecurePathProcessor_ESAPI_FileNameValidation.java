@@ -1,7 +1,8 @@
 package org.owasp.cheatcode.pathtraversal;
 
+import java.nio.file.Paths;
+
 import org.owasp.esapi.ESAPI;
-import org.owasp.esapi.ValidationErrorList;
 
 /**
  * This class contains a secure path processing implementation that uses OWASP ESAPI's
@@ -23,25 +24,24 @@ public class SecurePathProcessor_ESAPI_FileNameValidation extends PathProcessor 
     }
 
     @Override
-    public String getSanitizedFilePath(java.lang.String path) throws org.owasp.esapi.errors.ValidationException {
-        if (path == null) {
-            return "";
+    public String getResource(String userInput) throws Exception {
+        // Use the class name as the ESAPI validation context, so a failure names this processor
+        String context = this.getClass().getSimpleName();
+
+        if (ESAPI.validator().isValidFileName(context, userInput, false)) {
+            return readFrom(Paths.get(baseDirectory, userInput));
         }
-        // Use ESAPI's getValidFileName with class name as context, taking the allowed
-        // extensions from ESAPI.properties (HttpUtilities.ApprovedUploadExtensions)
-        return ESAPI.validator().getValidFileName(
-            this.getClass().getSimpleName(),
-            path,
+
+        // ESAPI is built to refuse rather than to repair. For every payload the configured
+        // pattern rejects, this call throws ValidationException instead of returning a rewritten
+        // name - so the caller gets an exception, not the contents of some other file. That is a
+        // better failure than a silent rewrite, and it still costs subdirectory access.
+        String validFileName = ESAPI.validator().getValidFileName(
+            context,
+            userInput,
             ESAPI.securityConfiguration().getAllowedFileExtensions(),
             false);
-    }
 
-    @Override
-    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
-        if (path == null) {
-            return false;
-        }
-        // Use ESAPI's isValidFileName with class name as context
-        return ESAPI.validator().isValidFileName(this.getClass().getSimpleName(), path, false);
+        return readFrom(Paths.get(baseDirectory, validFileName));
     }
-} 
+}

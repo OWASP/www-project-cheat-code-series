@@ -13,7 +13,7 @@ package org.owasp.cheatcode.harness;
 public final class CellResult {
 
     /** Bumped when the shape of this record changes incompatibly. */
-    public int schemaVersion = 1;
+    public int schemaVersion = 2;
 
     public String vulnerabilityClass;
 
@@ -62,8 +62,16 @@ public final class CellResult {
 
     /** What the harness actually observed, kept so a reader can check the classification. */
     public static final class Evidence {
-        public boolean attackDetected;
-        public boolean pathSanitized;
+        /**
+         * Whether the implementation read from somewhere other than the naive join of the base
+         * directory and the raw input. {@code null} when it never resolved a path at all, so the
+         * question does not apply.
+         *
+         * <p>Derived from {@link #resolvedPath}, not self-reported: schema version 1 carried
+         * {@code attackDetected} and {@code pathSanitized} flags that the old base class set on
+         * the implementation's behalf, and those no longer exist.
+         */
+        public Boolean inputRewritten;
         public String resolvedPath;
         public String contentPreview;
         public String exceptionClass;

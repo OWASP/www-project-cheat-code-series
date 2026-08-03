@@ -41,9 +41,11 @@ import org.owasp.cheatcode.harness.Verdict;
  * <h2>Debugging one case</h2>
  *
  * Every test method is a one-line call to {@link #assertCell}, which is written as a sequence of
- * separate locals rather than a chain. Put a breakpoint on the {@code processor.readFile} line,
- * run one test method from the VS Code gutter, and step over to watch the payload become a
- * {@link ReadFileResult}, then an {@link Outcome}, then a comparison.
+ * separate locals rather than a chain. Put a breakpoint on the {@code processor.readFile} line and
+ * run one test method from the VS Code gutter. Step <em>over</em> to watch the payload become a
+ * {@link ReadFileResult}, then an {@link Outcome}, then a comparison; step <em>into</em> for the
+ * part worth seeing — the implementation's own {@code getResource}, which holds the entire
+ * technique in one method.
  */
 @DisplayName("Path Processor Tests")
 abstract class BasePathProcessorTest {
@@ -183,9 +185,8 @@ abstract class BasePathProcessorTest {
                 : (expectation.outcome() == actual ? CellResult.MATCH : CellResult.MISMATCH);
 
         if (result != null) {
-            cell.evidence.attackDetected = result.isPathTraversalAttackDetected;
-            cell.evidence.pathSanitized = result.isPathSanitized;
-            cell.evidence.resolvedPath = relativiseToFixture(result.sanitizedFilePathToReadFrom);
+            cell.evidence.inputRewritten = OutcomeClassifier.inputRewritten(result);
+            cell.evidence.resolvedPath = relativiseToFixture(result.resolvedPath);
             cell.evidence.contentPreview = preview(result.fileReadResult);
             if (result.fileReadException != null) {
                 cell.evidence.exceptionClass = result.fileReadException.getClass().getName();
@@ -266,9 +267,8 @@ abstract class BasePathProcessorTest {
         if (result == null) {
             return text.append("\n  evidence : none - readFile returned null").toString();
         }
-        text.append("\n  evidence : detected=").append(result.isPathTraversalAttackDetected)
-            .append(" sanitized=").append(result.isPathSanitized)
-            .append("\n             path=").append(relativiseToFixture(result.sanitizedFilePathToReadFrom));
+        text.append("\n  evidence : rewritten=").append(OutcomeClassifier.inputRewritten(result))
+            .append("\n             path=").append(relativiseToFixture(result.resolvedPath));
         if (result.fileReadResult != null) {
             text.append("\n             content=\"").append(preview(result.fileReadResult)).append('"');
         }

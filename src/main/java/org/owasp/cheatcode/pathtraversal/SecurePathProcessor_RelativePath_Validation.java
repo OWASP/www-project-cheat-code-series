@@ -2,8 +2,7 @@ package org.owasp.cheatcode.pathtraversal;
 
 import java.io.File;
 import java.io.IOException;
-
-import org.owasp.esapi.ValidationErrorList;
+import java.nio.file.Paths;
 
 /**
  * This class contains a secure path processing implementation
@@ -11,53 +10,42 @@ import org.owasp.esapi.ValidationErrorList;
  * Based on https://stackoverflow.com/questions/2375903/whats-the-best-way-to-defend-against-a-path-traversal-attack/34658355#34658355
  */
 public class SecurePathProcessor_RelativePath_Validation extends PathProcessor {
-    
+
     public SecurePathProcessor_RelativePath_Validation(String baseDirectory) {
         super(baseDirectory);
-        this.canSanitize = false;
     }
-    
 
-    /**
-     * Method that validates a path using canonical path comparison
-     * @param path The path to validate
-     * @return true if the path is valid, false otherwise
-     */
     @Override
-    public boolean isValidFilePath(java.lang.String path, ValidationErrorList errors) {
-        if (path == null) {
-            return false;
-        }
+    public String getResource(String userInput) throws Exception {
+        File file = new File(userInput);
 
-        File file = new File(path);
-        
         // Check if the path is absolute
         if (file.isAbsolute()) {
-            return false;
+            throw new SecurityException("Absolute paths are not accepted: " + userInput);
         }
-        
+
         String canonicalPath;
         String absolutePath;
-        
+
         try {
             canonicalPath = file.getCanonicalPath();
             absolutePath = file.getAbsolutePath();
         } catch (IOException e) {
-            return false;
+            // getCanonicalPath refuses some inputs outright - an embedded NUL, for one. That is
+            // this implementation detecting the payload, not the JDK's path parser doing it for
+            // free later on, which is why this scores as a defence and not as a near miss.
+            throw new SecurityException("Path could not be canonicalised: " + userInput, e);
         }
-        
-        // If canonical path doesn't start with absolute path or they're not equal,
-        // it might be a traversal attempt
-        return canonicalPath.startsWith(absolutePath) || canonicalPath.equals(absolutePath);
-    }
 
-    /**
-     * Method that sanitizes a path by ensuring it's relative
-     * @param path The path to sanitize
-     * @return The sanitized path
-     */
-    @Override
-    public String getSanitizedFilePath(java.lang.String path) {
-        throw new UnsupportedOperationException("Sanitization is not supported for this processor");
+        // Canonicalising resolves `..` segments, so a path that changed under canonicalisation
+        // was trying to go somewhere other than where it named.
+        if (!canonicalPath.startsWith(absolutePath) && !canonicalPath.equals(absolutePath)) {
+            throw new SecurityException("Path traversal detected: " + userInput);
+        }
+
+        // Refuses rather than repairs. There is no second attempt to get wrong, and the caller
+        // gets an exception instead of the contents of a file they did not ask for - which is
+        // also why this is one of only two implementations that still serves `SomeSubFolder/`.
+        return readFrom(Paths.get(baseDirectory, userInput));
     }
-} 
+}

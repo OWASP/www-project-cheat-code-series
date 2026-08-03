@@ -2,6 +2,8 @@ package org.owasp.cheatcode.pathtraversal;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.owasp.cheatcode.harness.Outcome;
 
@@ -34,33 +36,30 @@ final class OutcomeClassifier {
             return Outcome.UNEXPECTED_ERROR;
         }
 
-        if (failure instanceof UnsupportedOperationException) {
-            // canSanitize == false: the implementation detected the input and declined to repair it.
-            return Outcome.REJECTED;
-        }
-
         if (isRuntimePathRejection(failure)) {
             // The JDK refused the path before the implementation's logic mattered.
             return Outcome.REJECTED_BY_RUNTIME;
         }
 
-        if (result.isPathSanitized) {
-            // Repaired, then the repaired path turned out not to exist.
-            return failure instanceof NoSuchFileException
+        if (result.resolvedPath == null) {
+            // It threw before it ever named a file, so it refused the input - whether by
+            // rejecting it outright or by a repair attempt that threw instead of returning a
+            // repaired name. Either way the caller got an exception rather than the contents of
+            // some other file, which is the only difference a caller can actually observe.
+            return Outcome.REJECTED;
+        }
+
+        if (failure instanceof NoSuchFileException) {
+            // It named a file and the file was not there. *Which* file it named is the whole
+            // story: a rewritten path means the implementation acted, an untouched one means
+            // the fixture layout is the only reason the read failed.
+            return Boolean.TRUE.equals(inputRewritten(result))
                     ? Outcome.SANITIZED_MISS
-                    : Outcome.UNEXPECTED_ERROR;
+                    : Outcome.UNDETECTED_MISS;
         }
 
-        if (result.isPathTraversalAttackDetected) {
-            // Detected, repair attempted, and the repair itself threw.
-            return Outcome.SANITIZE_FAILED;
-        }
-
-        // Never detected. If the read failed it is because of where the fixture puts its files,
-        // not because of anything the implementation did.
-        return failure instanceof NoSuchFileException
-                ? Outcome.UNDETECTED_MISS
-                : Outcome.UNEXPECTED_ERROR;
+        // It named a file, and something other than "not found" went wrong. Always worth a look.
+        return Outcome.UNEXPECTED_ERROR;
     }
 
     private static Outcome classifySuccessfulRead(Payload payload, ReadFileResult result) {
@@ -72,7 +71,43 @@ final class OutcomeClassifier {
         if (!servedWhatWasAskedFor) {
             return Outcome.READ_UNEXPECTED;
         }
-        return result.isPathSanitized ? Outcome.SANITIZED_HIT : Outcome.READ_OK;
+        return Boolean.TRUE.equals(inputRewritten(result))
+                ? Outcome.SANITIZED_HIT
+                : Outcome.READ_OK;
+    }
+
+    /**
+     * Did the implementation read from somewhere other than the naive join of the base directory
+     * and the raw input - that is, did it change the input on the way through?
+     *
+     * <p>This replaces the old {@code isPathSanitized} flag, which the base class used to set on
+     * the implementation's behalf. Derived rather than declared, so an implementation can neither
+     * claim a rewrite it did not perform nor hide one it did. It also asks a slightly different
+     * question than the flag did: the flag recorded which branch ran, this records what actually
+     * changed, so a repair that happens to be a no-op no longer counts as one.
+     *
+     * <p>Package-private so that the recorded evidence uses the same definition the
+     * classification does, rather than a second copy of it.
+     *
+     * @return null when the implementation never resolved a path, so the question does not apply
+     */
+    static Boolean inputRewritten(ReadFileResult result) {
+        if (result == null || result.resolvedPath == null) {
+            return null;
+        }
+
+        Path naive;
+        try {
+            naive = Paths.get(result.baseDirectory, result.userProvidedPath);
+        } catch (InvalidPathException e) {
+            // Paths.get cannot even express the raw input - an embedded NUL, in practice. If the
+            // implementation resolved something anyway, it must have changed the input to get
+            // there. (An implementation that did not is unreachable here: it would have thrown
+            // InvalidPathException itself and been classified REJECTED_BY_RUNTIME above.)
+            return Boolean.TRUE;
+        }
+
+        return !naive.equals(result.resolvedPath);
     }
 
     /**

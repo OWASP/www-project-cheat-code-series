@@ -3,43 +3,43 @@ package org.owasp.cheatcode.pathtraversal;
 import java.nio.file.Path;
 
 /**
- * Result wrapper class for file operations that contains information about
- * the path processing and file reading results, including any validation,
- * sanitization, or error states that occurred during processing.
+ * What happened when one string was handed to one {@link PathProcessor}.
+ *
+ * <p>Public mutable fields, deliberately: this is an observation record rather than a domain
+ * object, and the harness reads it field by field to decide what a cell in the matrix means.
+ *
+ * <p>Nothing here claims the input was "detected" or "sanitised". Those were flags the old
+ * base-class pipeline set on the implementation's behalf. An implementation now simply resolves a
+ * path, and whether it rewrote the input on the way is <em>derived</em> by comparing
+ * {@link #resolvedPath} against the naive join of {@link #baseDirectory} and
+ * {@link #userProvidedPath} - so an implementation can neither claim a rewrite it did not perform
+ * nor hide one it did.
  */
 public class ReadFileResult {
-    /**
-     * Indicates whether a path traversal attack was detected during path processing.
-     * True if a potential path traversal attack was detected, false otherwise.
-     */
-    public boolean isPathTraversalAttackDetected = false;
 
     /**
-     * Indicates whether the path was sanitized during processing.
-     * True if the path was sanitized, false if it was either valid or sanitization failed.
+     * The directory the processor was told it may serve files from.
      */
-    public boolean isPathSanitized = false;
+    public String baseDirectory;
 
     /**
-     * The original path provided by the user before any processing.
+     * The original string provided by the user, before any processing.
      */
     public String userProvidedPath;
 
     /**
-     * The final processed path that was used to read the file.
-     * This path has been validated and optionally sanitized.
+     * The file the implementation actually decided to read, or null if it never got that far -
+     * it refused the input, or the path could not be built at all.
      */
-    public Path sanitizedFilePathToReadFrom;
+    public Path resolvedPath;
 
     /**
-     * The content of the file that was read.
-     * Null if the file could not be read or if an error occurred.
+     * The content that was read, or null if nothing was.
      */
     public String fileReadResult;
 
     /**
-     * Any exception that occurred during path processing or file reading.
-     * Null if no errors occurred.
+     * Whatever the implementation threw, or null if it did not.
      */
     public Exception fileReadException;
-} 
+}
