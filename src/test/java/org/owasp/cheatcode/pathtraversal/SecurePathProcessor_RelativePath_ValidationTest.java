@@ -46,7 +46,8 @@ class SecurePathProcessor_RelativePath_ValidationTest extends BasePathProcessorT
               + "canonicalisation over filtering.")
             .expect(ATTACK_SINGLE_LEVEL_TRAVERSAL, REJECTED,
                 "Canonicalising removes the `..`, so the path no longer equals itself and is "
-              + "refused outright - canSanitize is false, so there is no repair to get wrong.")
+              + "refused outright - it throws rather than repairing, so there is no repair to "
+              + "get wrong.")
             .expect(ATTACK_DOUBLE_LEVEL_TRAVERSAL, REJECTED)
             .expect(ATTACK_DOUBLE_DOT_TRAVERSAL, REJECTED)
             .expect(MALFORMED_NULL_BYTE, REJECTED,

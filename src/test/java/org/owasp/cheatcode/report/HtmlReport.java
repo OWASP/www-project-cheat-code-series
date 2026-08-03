@@ -207,7 +207,7 @@ final class HtmlReport {
 
         out.append("<h3>Outcome — the code in the cell</h3>\n<dl>\n");
         String[] outcomes = {
-            "READ_OK", "SANITIZED_HIT", "REJECTED", "SANITIZE_FAILED", "SANITIZED_MISS",
+            "READ_OK", "SANITIZED_HIT", "REJECTED", "SANITIZED_MISS",
             "UNDETECTED_MISS", "REJECTED_BY_RUNTIME", "SECRET_DISCLOSED"
         };
         for (String outcome : outcomes) {
@@ -370,8 +370,7 @@ final class HtmlReport {
             "  if (c.status !== 'MATCH') html += row('status', c.status);",
             "  html += row('platform', c.platform + (c.platformSpecificExpectation",
             "    ? ' (declared for this platform specifically)' : ''));",
-            "  html += row('detected', ev.attackDetected);",
-            "  html += row('sanitized', ev.pathSanitized);",
+            "  html += row('input rewritten', ev.inputRewritten);",
             "  html += row('resolved path', ev.resolvedPath);",
             "  html += row('content', ev.contentPreview);",
             "  html += row('threw', ev.exceptionClass);",

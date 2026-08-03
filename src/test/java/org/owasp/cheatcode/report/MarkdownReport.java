@@ -126,7 +126,7 @@ final class MarkdownReport {
         out.append("\n**Outcome** — what actually happened:\n\n");
         out.append("| Code | Outcome | Meaning |\n| --- | --- | --- |\n");
         String[] outcomes = {
-            "READ_OK", "SANITIZED_HIT", "REJECTED", "SANITIZE_FAILED", "SANITIZED_MISS",
+            "READ_OK", "SANITIZED_HIT", "REJECTED", "SANITIZED_MISS",
             "UNDETECTED_MISS", "REJECTED_BY_RUNTIME", "SECRET_DISCLOSED"
         };
         for (String outcome : outcomes) {

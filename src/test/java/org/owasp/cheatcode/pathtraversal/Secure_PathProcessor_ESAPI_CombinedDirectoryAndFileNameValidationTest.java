@@ -4,7 +4,7 @@ import org.owasp.cheatcode.harness.Expectations;
 
 import static org.owasp.cheatcode.harness.Expectations.on;
 import static org.owasp.cheatcode.harness.Outcome.READ_OK;
-import static org.owasp.cheatcode.harness.Outcome.SANITIZE_FAILED;
+import static org.owasp.cheatcode.harness.Outcome.REJECTED;
 import static org.owasp.cheatcode.harness.Platform.WINDOWS;
 import static org.owasp.cheatcode.pathtraversal.Payload.ATTACK_DOUBLE_DOT_TRAVERSAL;
 import static org.owasp.cheatcode.pathtraversal.Payload.ATTACK_DOUBLE_LEVEL_TRAVERSAL;
@@ -41,18 +41,18 @@ class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidationTest exte
     Expectations expected() {
         return Expectations.builder()
             .expect(LEGIT_SIMPLE_FILE, READ_OK)
-            .expect(LEGIT_SUBFOLDER_FILE, SANITIZE_FAILED,
+            .expect(LEGIT_SUBFOLDER_FILE, REJECTED,
                 "The interesting negative result. This is the one implementation whose design "
               + "anticipates nested paths, and it still cannot serve `SomeSubFolder/sublegit.txt` - "
               + "so the whole ESAPI family loses subdirectory access, not just the filename-only "
               + "members. If any cell in this matrix deserves a follow-up, it is this one.")
-            .expect(ATTACK_SINGLE_LEVEL_TRAVERSAL, SANITIZE_FAILED)
-            .expect(ATTACK_DOUBLE_LEVEL_TRAVERSAL, SANITIZE_FAILED)
-            .expect(ATTACK_DOUBLE_DOT_TRAVERSAL, SANITIZE_FAILED)
-            .expect(MALFORMED_NULL_BYTE, SANITIZE_FAILED,
+            .expect(ATTACK_SINGLE_LEVEL_TRAVERSAL, REJECTED)
+            .expect(ATTACK_DOUBLE_LEVEL_TRAVERSAL, REJECTED)
+            .expect(ATTACK_DOUBLE_DOT_TRAVERSAL, REJECTED)
+            .expect(MALFORMED_NULL_BYTE, REJECTED,
                 "Rejected by ESAPI rather than by the JDK.")
             .expect(ATTACK_WINDOWS_STYLE_TRAVERSAL,
-                on(WINDOWS, SANITIZE_FAILED,
+                on(WINDOWS, REJECTED,
                    "Declared for WINDOWS only; POSIX behaviour not yet observed. This "
                  + "implementation splits with java.io.File, so it is one of the more "
                  + "platform-sensitive rows here - File.getParent() answers differently for a "

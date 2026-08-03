@@ -43,7 +43,6 @@ public enum Verdict {
             case SECRET_DISCLOSED:
                 return BREACH;
             case REJECTED:
-            case SANITIZE_FAILED:
             case SANITIZED_MISS:
             case SANITIZED_HIT:
                 return SAFE;

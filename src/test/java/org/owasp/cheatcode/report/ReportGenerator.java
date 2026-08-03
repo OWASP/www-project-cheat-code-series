@@ -144,7 +144,6 @@ public final class ReportGenerator {
             case "READ_OK":             return "ok";
             case "SANITIZED_HIT":       return "ok*";
             case "REJECTED":            return "refused";
-            case "SANITIZE_FAILED":     return "threw";
             case "SANITIZED_MISS":      return "rewritten";
             case "UNDETECTED_MISS":     return "MISS";
             case "REJECTED_BY_RUNTIME": return "jdk";
@@ -181,17 +180,16 @@ public final class ReportGenerator {
             case "READ_OK":
                 return "Read succeeded and returned the content the payload legitimately asks for.";
             case "SANITIZED_HIT":
-                return "Input was detected and repaired, and the repaired read succeeded safely.";
+                return "Input was rewritten, and the read of the rewritten path succeeded safely.";
             case "REJECTED":
-                return "Detected and refused outright - the implementation does not attempt repair.";
-            case "SANITIZE_FAILED":
-                return "Detected, repair attempted, and the repair itself threw. The caller gets an exception.";
+                return "The caller got an exception instead of content: the input was refused outright, "
+                     + "or a repair attempt threw rather than returning a repaired name.";
             case "SANITIZED_MISS":
-                return "Detected and repaired into a path that does not exist. Blocked - but legitimate "
+                return "Rewritten into a path that does not exist. Blocked - but legitimate "
                      + "input of the same shape is silently rewritten too.";
             case "UNDETECTED_MISS":
-                return "NOT detected. The read failed only because of where the fixture puts its files. "
-                     + "A near miss, not a defence.";
+                return "Read from exactly the path the raw input names - nothing was changed. The read "
+                     + "failed only because of where the fixture puts its files. A near miss, not a defence.";
             case "REJECTED_BY_RUNTIME":
                 return "The JDK or filesystem refused the path. The implementation contributed nothing, "
                      + "and would have no protection on a platform with laxer path parsing.";

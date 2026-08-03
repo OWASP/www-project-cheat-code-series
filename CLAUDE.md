@@ -40,10 +40,14 @@ Green does **not** mean "nothing is vulnerable". A vulnerable processor that dis
 
 ### The outcome vocabulary
 
-[Outcome](src/test/java/org/owasp/cheatcode/harness/Outcome.java) is deliberately richer than pass/fail, because pass/fail cannot distinguish a rejection from a silent rewrite. Two values matter most:
+[Outcome](src/test/java/org/owasp/cheatcode/harness/Outcome.java) has nine values and is deliberately richer than pass/fail, because pass/fail cannot distinguish a rejection from a silent rewrite. Two values matter most:
 
-- **`UNDETECTED_MISS`** — the implementation did not detect the payload; the read failed only because `../` from the base directory lands one level short of `pwnStorage/`. A near miss, never a defence.
+- **`UNDETECTED_MISS`** — the implementation read from exactly the path the raw input names, changing nothing; the read failed only because `../` from the base directory lands one level short of `pwnStorage/`. A near miss, never a defence.
 - **`REJECTED_BY_RUNTIME`** — the JDK refused the path (`InvalidPathException` on an embedded NUL), not the implementation. Seven of fourteen implementations score this on the null-byte payload; the old pass/fail table showed all fourteen as clean.
+
+`SANITIZE_FAILED` was merged into `REJECTED` in August 2026: without a separate sanitize phase, "refused outright" and "the repair attempt threw" are the same event from where the caller stands — no file named, an exception returned. Which route was taken is still visible in `evidence.exceptionClass` and in the implementation's own code.
+
+**"Rewrote the input" is derived, not declared.** `SANITIZED_MISS` vs `UNDETECTED_MISS` and `SANITIZED_HIT` vs `READ_OK` turn on whether the implementation resolved a different path than `Paths.get(base, rawInput)` — see `OutcomeClassifier.inputRewritten`. The old `isPathSanitized` / `isPathTraversalAttackDetected` flags are gone, so an implementation can neither claim a rewrite it did not perform nor hide one it did.
 
 [Verdict](src/test/java/org/owasp/cheatcode/harness/Verdict.java) interprets an outcome given the payload's `PayloadKind` — the same outcome means opposite things for a legitimate input and an attack. Verdict colours the report; test pass/fail is orthogonal.
 
@@ -51,13 +55,16 @@ Classification lives entirely in [OutcomeClassifier](src/test/java/org/owasp/che
 
 ## Architecture of the PoC
 
-[PathProcessor](src/main/java/org/owasp/cheatcode/pathtraversal/PathProcessor.java) is the whole harness. `readFile()` → `calculateTargetPath()` runs a fixed pipeline that every implementation plugs into via two abstract methods:
+**One implementation, one method.** Each processor implements a single `getResource(String userInput)` that validates, repairs or refuses and then reads — the shape the equivalent function has in a real application. Restructured in August 2026; anything you remember about `isValidFilePath`, `getSanitizedFilePath`, `canSanitize` or `joinPaths` is obsolete. The point is that a developer can read one file top to bottom without reassembling the flow from a base class, so **keep the whole technique in that one method** — do not factor a check back out into a helper the reader has to chase.
 
-- `isValidFilePath(input, errors)` — false means "traversal detected".
-- `getSanitizedFilePath(input)` — only reached when validation failed **and** the protected `canSanitize` flag is true. Implementations that reject rather than repair set `canSanitize = false` in their constructor, which turns a detected attack into `UnsupportedOperationException` instead of a second attempt.
-- `joinPaths(base, input)` is `protected` so a vulnerable variant can override it to demonstrate unsafe concatenation (see [VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat](src/main/java/org/owasp/cheatcode/pathtraversal/VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat.java)).
+[PathProcessor](src/main/java/org/owasp/cheatcode/pathtraversal/PathProcessor.java) contains no defence of its own. It supplies exactly two things:
 
-Every outcome is recorded on [ReadFileResult](src/main/java/org/owasp/cheatcode/pathtraversal/ReadFileResult.java) — public mutable fields, deliberately: `isPathTraversalAttackDetected`, `isPathSanitized`, `fileReadResult` and `fileReadException` are observed rather than exceptions being caught, so a processor can silently succeed at an attack and still be visible. `OutcomeClassifier` reads all four to decide the cell's `Outcome`; tests assert on that, never on the raw fields.
+- `readFrom(Path)` — the only sanctioned route to content. It reads and records the resolved path. Calling `Files.readString` directly leaves the report blind and breaks the rewrite derivation.
+- `readFile(String)` — `final`, harness-facing. Runs `getResource`, guards null/empty input, and *reports* the result rather than throwing, so a processor that silently succeeds at an attack stays visible.
+
+Refusing means throwing. Repairing means changing the string and reading the result — in plain code, with no framework flag. A processor whose technique repairs input still repairs it; that is deliberate, because [VulnerablePathProcessor_Bypassable_StringContainsCheck](src/main/java/org/owasp/cheatcode/pathtraversal/VulnerablePathProcessor_Bypassable_StringContainsCheck.java)'s `....//` breach exists precisely because deleting `../` reassembles one, and the secure rewriters' cost to `SomeSubFolder/` is the matrix's central lesson.
+
+Every outcome is recorded on [ReadFileResult](src/main/java/org/owasp/cheatcode/pathtraversal/ReadFileResult.java) — public mutable fields, deliberately: `baseDirectory`, `userProvidedPath`, `resolvedPath`, `fileReadResult` and `fileReadException` are observed rather than exceptions being caught. `OutcomeClassifier` reads them to decide the cell's `Outcome`; tests assert on that, never on the raw fields.
 
 Class names are the documentation. The pattern is `{Vulnerable|Secure}PathProcessor_{Technique}_{Variant}` — keep it, since the comparison table in the README and the test output are read by name.
 

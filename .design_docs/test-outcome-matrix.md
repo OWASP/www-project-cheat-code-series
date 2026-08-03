@@ -4,6 +4,11 @@
 
 ## Status — 2026-08-01
 
+> **Superseded in part on 2026-08-03** — the processor API was restructured to one
+> method per implementation and `SANITIZE_FAILED` was merged into `REJECTED`.
+> See [§10](#10-status--2026-08-03--one-method-per-implementation). Everything
+> about the matrix, the expectations and the reporting below still holds.
+
 Steps 1–3 are **implemented**. Containers (step 5) are deliberately **deferred**,
 and symlink payloads (step 4) are the first thing that will need them.
 
@@ -111,6 +116,11 @@ class. Same two edits.
 
 ## 4. The outcome vocabulary
 
+> **Amended 2026-08-03** — see [§10](#10-status--2026-08-03--one-method-per-implementation).
+> `SANITIZE_FAILED` was merged into `REJECTED` (ten values → nine) and `canSanitize`
+> no longer exists. The reasoning below stands; only the mechanism named in it has
+> changed.
+
 Traced against the real implementations, not guessed.
 `SecurePathProcessor_StringContains_Simple` does not set `canSanitize = false`,
 so `SomeSubFolder/sublegit.txt` is detected, repaired to
@@ -158,9 +168,11 @@ whether the payload was supposed to work:
 | `LEGITIMATE` | `READ_OK` | `SAFE` |
 | `LEGITIMATE` | anything else | `FUNCTIONALITY_LOST` |
 | `ATTACK` / `MALFORMED` | `SECRET_DISCLOSED` | `BREACH` |
-| `ATTACK` / `MALFORMED` | `REJECTED`, `SANITIZE_FAILED`, `SANITIZED_MISS`, `SANITIZED_HIT` | `SAFE` |
+| `ATTACK` / `MALFORMED` | `REJECTED`, `SANITIZE_FAILED`¹, `SANITIZED_MISS`, `SANITIZED_HIT` | `SAFE` |
 | `ATTACK` / `MALFORMED` | `UNDETECTED_MISS`, `REJECTED_BY_RUNTIME` | `NEAR_MISS` |
 | `ATTACK` / `MALFORMED` | `READ_UNEXPECTED`, `UNEXPECTED_ERROR` | `ERROR` |
+
+¹ Merged into `REJECTED` on 2026-08-03; see [§10](#10-status--2026-08-03--one-method-per-implementation).
 
 `Verdict` colours the matrix. Test pass/fail (does the outcome match what was
 declared?) is a separate, orthogonal thing — a cell can be `BREACH` and green,
@@ -235,7 +247,10 @@ the baseline is opaque. It remains the correct fallback if step 2 stalls.
 **A separate dev-only suite.** Redundant with the matrix, except for one piece
 worth doing regardless: `PathProcessor` itself — the `canSanitize` branch,
 null/empty input, `joinPaths` — has no demo value and deserves plain green
-tests. Not in scope here.
+tests. Not in scope here. *(Two thirds of that list stopped existing on
+2026-08-03; what survives is the null/empty guard on `readFile`, plus the
+`inputRewritten` derivation in `OutcomeClassifier`, which is now the harness's
+only piece of non-obvious logic. See [§10](#10-status--2026-08-03--one-method-per-implementation).)*
 
 **Generalising the harness across vulnerability classes now.** `Outcome`'s
 values (`SECRET_DISCLOSED`, `SANITIZED_MISS`) are path-traversal-flavoured.
@@ -291,3 +306,84 @@ loosen the assertions*:
 
 The corresponding README framing changes from "the test results are the report"
 to "the matrix is the report, and the suite guards it."
+
+## 10. Status — 2026-08-03 — one method per implementation
+
+The two-abstract-method shape (`isValidFilePath` + `getSanitizedFilePath`, with a
+`canSanitize` flag and a private template method wiring them together) is gone.
+Each implementation is now a single `getResource(String userInput)` that
+validates, repairs or refuses and then reads.
+
+**Why.** The exhibit is meant to be read. It could not be: understanding one
+implementation meant opening `PathProcessor` to learn when the second method
+ran, and understanding `Default_NoChecks_ImproperPathConcat` meant opening three
+files, since it extended another concrete processor and overrode a `protected
+joinPaths`. That split was never a decision — it arrived wholesale in `c40e5df`
+("copy code for PathTraversal PoC") with no rationale, and this document, which
+otherwise records every choice, never justified it.
+
+It also produced measurable duplication: the same rule spelled out twice in two
+dialects in five of the fourteen; two classes that had already discovered
+validity was just `getSanitizedFilePath(x).equals(x)`; two dead
+`UnsupportedOperationException` throws that `canSanitize = false` made
+unreachable; fourteen dead null guards; and a `ValidationErrorList` parameter
+ignored by eleven implementations and discarded by the base class in all of them.
+
+### What was deliberately kept
+
+**Sanitisation survives as behaviour and dies as framework.** A processor whose
+technique repairs input still repairs it, inline. Removing repair altogether was
+considered and rejected: `Bypassable_StringContainsCheck`'s `....//` breach
+exists *because* deleting `../` reassembles one — make it throw and the most
+instructive row in the matrix turns green and stops teaching anything. The 🟠
+`SomeSubFolder/…` column likewise only means something because those
+implementations silently rewrite rather than refuse.
+
+### Two vocabulary changes
+
+**`SANITIZE_FAILED` merged into `REJECTED`** (ten values → nine). Without a
+separate sanitise phase these are one event from where the caller stands: no
+file was named, an exception came back. The merge is also a correction — all 18
+`SANITIZE_FAILED` cells were ESAPI, and ESAPI never repaired. It refuses; it
+only reached that value because the old pipeline routed it through the sanitise
+branch. Cost: the README table can no longer distinguish those 18 cells from the
+10 canonical-validator ones. `evidence.exceptionClass` and the per-cell notes
+carry the distinction instead.
+
+**"Rewrote the input" is now derived, not self-reported.** `ReadFileResult`'s
+`isPathTraversalAttackDetected` and `isPathSanitized` were flags the base class
+set on the implementation's behalf, and they were load-bearing: 27
+`SANITIZED_MISS` cells are distinguishable from 6 `UNDETECTED_MISS` cells by
+nothing else, and mistaking them would relabel five *secure* implementations as
+🟡 `NEAR_MISS` — the exact false story `UNDETECTED_MISS` was invented to prevent.
+`OutcomeClassifier.inputRewritten` now compares the path the implementation
+resolved against `Paths.get(base, rawInput)`. No flag, and an implementation can
+neither claim a rewrite it did not perform nor hide one it did.
+
+Note the predicate shifted meaning: it used to record *which branch ran*, and now
+records *what actually changed*. A repair that happens to be a no-op no longer
+counts as a rewrite. That is the more honest answer, and no current cell
+distinguishes the two.
+
+`CellResult.schemaVersion` is 2: `evidence.attackDetected` and
+`evidence.pathSanitized` are replaced by a nullable `evidence.inputRewritten`.
+
+### Evidence
+
+Verified by diffing all 98 recorded cells before and after. Intended changes
+only: 18 cells `SANITIZE_FAILED` → `REJECTED`, and `exceptionClass` on 10 cells
+where the two canonicalising validators now throw `SecurityException` themselves
+instead of the base class manufacturing `UnsupportedOperationException` for them.
+
+**`verdict` identical on all 98. `evidence.resolvedPath` byte-identical on all
+98** — which is what proves the derived signal reproduces the deleted
+`isPathSanitized` flag rather than approximating it. The refactor was committed
+red, with the 18 mismatches unresolved, so that the matrix diff was the evidence
+for changing those expectations rather than the other way round (§9).
+
+One defect surfaced and was corrected: the declared note for
+`Bypassable_StringContainsCheck` on `....//` claimed the payload "contains no
+literal `../`". It does — at index 2 — so the check fires, the repair runs, and
+deleting the match splices `....//....//pwnStorage//secret.txt` into
+`../../pwnStorage//secret.txt`. The breach is manufactured *by the repair*, which
+is a sharper lesson than the one the note was telling.

@@ -51,9 +51,12 @@ class VulnerablePathProcessor_Bypassable_StringContainsCheckTest extends BasePat
                 "Also caught. Deleting every `../` leaves `pwnStorage/secret.txt` under the base "
               + "directory, which does not exist.")
             .expect(ATTACK_DOUBLE_DOT_TRAVERSAL, SECRET_DISCLOSED,
-                "The bypass. `....//` contains no literal `../`, so validation passes it through "
-              + "untouched and the doubled separators collapse on resolution. Deleting a substring "
-              + "cannot be a defence when deleting it can also create it.")
+                "The bypass, and not by evading the check: `....//` does contain a literal `../`, "
+              + "so the check fires and the repair runs. Deleting the `../` splices what surrounds "
+              + "it back together, and `....//....//pwnStorage//secret.txt` becomes "
+              + "`../../pwnStorage//secret.txt` - a working two-level traversal, manufactured by "
+              + "the repair out of a payload that had none. Deleting a substring cannot be a "
+              + "defence when deleting it can also create it.")
             .expect(MALFORMED_NULL_BYTE, REJECTED_BY_RUNTIME,
                 "InvalidPathException from the JDK, not from the `../` check.")
             .expect(ATTACK_WINDOWS_STYLE_TRAVERSAL,
