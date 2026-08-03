@@ -97,4 +97,10 @@ The two ESAPI filename processors reach identical verdicts by different routes, 
 
 ## CI
 
-[.github/workflows/validate-owasp-metadata.yaml](.github/workflows/validate-owasp-metadata.yaml) validates `*.owasp.yaml` against the OWASP Nest schema on push/PR touching that file. **The Java build and tests are not run in CI** — verify locally before pushing.
+[.github/workflows/validate-owasp-metadata.yaml](.github/workflows/validate-owasp-metadata.yaml) validates `*.owasp.yaml` against the OWASP Nest schema on push/PR touching that file.
+
+[.github/workflows/java-outcome-matrix.yaml](.github/workflows/java-outcome-matrix.yaml) runs the suite across `{windows, ubuntu, macos} × JDK {11, 21}` and publishes the merged report as the `outcome-matrix-report` artifact.
+
+**Only `windows-latest` + JDK 21 is a gate**; every other combination is `continue-on-error`. That is not laziness — those combinations have no declared expectations, so red there means `UNDECLARED` ("nobody has recorded what this does") rather than a regression. Linux and macOS will report the `..\..\` cells as undeclared *by design*. Promote a combination to required by removing it from the `continue-on-error` expression once its cells are declared, using that job's uploaded results as the evidence.
+
+JDK 11 is the declared floor (README, `maven.compiler.source`) but the expectations were recorded on 21 and 25, verified identical on both. Nobody has observed JDK 11. If that job goes red, check the "Java 11+" claim before touching the matrix.
