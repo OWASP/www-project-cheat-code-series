@@ -13,10 +13,12 @@ name: Java outcome matrix
 #                    design. The uploaded results are how they get declared: read
 #                    them, check each observed outcome is correct, then add the
 #                    on(LINUX, ...) variants and promote this job to a gate.
-#   JDK 11         - the project's declared floor (README, maven.compiler.source),
-#                    but expectations were recorded on 21 and 25. Never observed
-#                    on 11. If this job goes red, the "Java 11+" claim is the thing
-#                    to check, not the matrix.
+#   JDK 17         - the project's declared floor (README, maven.compiler.source),
+#                    raised from 11 in August 2026 when Spring moved to 7.0.8 to
+#                    clear four advisories that have no fix on the 5.3.x line.
+#                    Expectations were recorded on 21 and 25. Never observed on 17.
+#                    If this job goes red, the "Java 17+" claim is the thing to
+#                    check, not the matrix.
 #
 # Promote a combination to required by removing it from the continue-on-error
 # expression below, once its cells are declared.
@@ -59,7 +61,7 @@ jobs:
           - ubuntu-latest
           - macos-latest
         java:
-          - '11'
+          - '17'
           - '21'
 
     steps:

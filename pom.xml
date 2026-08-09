@@ -9,26 +9,29 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <!-- 17 because Spring 7 requires it; nothing in the PoC itself needs it. -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring.version>7.0.8</spring.version>
     </properties>
 
     <dependencies>
+        <!--
+            MultipartFile and MockMultipartFile, for the Spring FalseSanitizer exhibit. The
+            version and the Java 17 floor it forces are argued in
+            .design_docs/dependency-triage.md - no 6.0.x or 6.1.x release clears all four
+            advisories, so those lines are not landing spots.
+        -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>5.3.27</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-fileupload</groupId>
-            <artifactId>commons-fileupload</artifactId>
-            <version>1.5</version>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>5.3.27</version>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -63,13 +66,27 @@
         <dependency>
             <groupId>org.owasp.esapi</groupId>
             <artifactId>esapi</artifactId>
-            <version>2.6.0.0</version>
+            <version>2.7.0.0</version>
+            <exclusions>
+                <!--
+                    EOL with an unfixable advisory, and reached only by ESAPI's access-control
+                    policy loader, which this project never calls. Put it back if anything ever
+                    calls ESAPI.accessController().
+                -->
+                <exclusion>
+                    <groupId>commons-configuration</groupId>
+                    <artifactId>commons-configuration</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!--
+            Nothing imports javax.servlet, but ESAPI loads HttpServletRequest at runtime and
+            declares it `provided`. Removing this fails all 21 ESAPI cells with NoClassDefFound.
+        -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>4.0.1</version>
-            <scope>compile</scope>
         </dependency>
         <!--
             Test scope only. Used by the result recorder and the report generator, never by the

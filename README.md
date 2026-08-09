@@ -35,7 +35,7 @@ mvn clean test              # green when reality matches the recorded matrix
 mvn exec:java@report        # build target/report/index.html
 ```
 
-Requires Java 11+ and Maven. Open `target/report/index.html` for the interactive matrix — click any cell for the payload, the evidence, and the note explaining why that implementation behaves that way.
+Requires Java 17+ and Maven. Open `target/report/index.html` for the interactive matrix — click any cell for the payload, the evidence, and the note explaining why that implementation behaves that way.
 
 Useful variations:
 
@@ -177,7 +177,7 @@ This is envisioned as a long-term, multi-year project; the timeline depends on a
 
 ## Dependencies
 
-Java 11+, JUnit 5, Mockito, Spring Web (for the multipart misuse example), and OWASP ESAPI 2.6. Gson is used by the test harness only.
+Java 17+, JUnit 5, Mockito, Spring Web 7 (for the multipart misuse example), and OWASP ESAPI 2.7. Gson is used by the test harness only. Java 17 is Spring 7's floor rather than the PoC's own need — see [.design_docs/dependency-triage.md](.design_docs/dependency-triage.md).
 
 ## License
 

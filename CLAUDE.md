@@ -23,7 +23,7 @@ mvn exec:java -Dexec.mainClass=org.owasp.cheatcode.pathtraversal.Main   # consol
 bundle exec jekyll serve                          # site preview (Gemfile is gitignored; github-pages gem)
 ```
 
-Java 11, JUnit 5, Mockito, OWASP ESAPI 2.6, Gson (test scope only). There is no linter or formatter configured. VS Code launch configs for `Main` and the current file are in [.vscode/launch.json](.vscode/launch.json).
+Java 17, JUnit 5, Mockito, Spring 7.0.8, OWASP ESAPI 2.7, Gson (test scope only). The Java floor was 11 until August 2026; Spring 7 raised it, and Spring is the only reason for it. Dependency versions are pinned with reasons — read [.design_docs/dependency-triage.md](.design_docs/dependency-triage.md) before changing one, and note that `commons-configuration` is excluded from ESAPI on purpose. There is no linter or formatter configured. VS Code launch configs for `Main` and the current file are in [.vscode/launch.json](.vscode/launch.json).
 
 ## The matrix is the report; the suite guards it
 
@@ -142,4 +142,4 @@ The two ESAPI filename processors reach identical verdicts by different routes, 
 
 **Only `windows-latest` + JDK 21 is a gate**; every other combination is `continue-on-error`. That is not laziness — those combinations have no declared expectations, so red there means `UNDECLARED` ("nobody has recorded what this does") rather than a regression. Linux and macOS will report the `..\..\` cells as undeclared *by design*. Promote a combination to required by removing it from the `continue-on-error` expression once its cells are declared, using that job's uploaded results as the evidence.
 
-JDK 11 is the declared floor (README, `maven.compiler.source`) but the expectations were recorded on 21 and 25, verified identical on both. Nobody has observed JDK 11. If that job goes red, check the "Java 11+" claim before touching the matrix.
+JDK 17 is the declared floor (README, `maven.compiler.source`) but the expectations were recorded on 21 and 25, verified identical on both. Nobody has observed JDK 17. If that job goes red, check the "Java 17+" claim before touching the matrix.
