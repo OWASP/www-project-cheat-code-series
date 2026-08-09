@@ -6,9 +6,9 @@ import java.nio.file.Paths;
  * This class contains a vulnerable path processing implementation
  * that performs no validation or sanitization.
  */
-public class VulnerablePathProcessor_Default_NoChecks extends PathProcessor {
+public class Vulnerable_None_JavaNIO_PathsGet_NoDefence extends PathProcessor {
 
-    public VulnerablePathProcessor_Default_NoChecks(String baseDirectory) {
+    public Vulnerable_None_JavaNIO_PathsGet_NoDefence(String baseDirectory) {
         super(baseDirectory);
     }
 

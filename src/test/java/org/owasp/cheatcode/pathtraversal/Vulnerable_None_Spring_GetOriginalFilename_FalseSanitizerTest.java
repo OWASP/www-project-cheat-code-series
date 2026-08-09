@@ -18,11 +18,11 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalNameTest extends BasePathProcessorTest {
+class Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizerTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalName(baseDir);
+        return new Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizer(baseDir);
     }
 
     @Override

@@ -16,11 +16,11 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidationTest extends BasePathProcessorTest {
+class Secure_RawString_ESAPI_DirectoryAndFileName_ValidatorTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation(baseDir);
+        return new Secure_RawString_ESAPI_DirectoryAndFileName_Validator(baseDir);
     }
 
     @Override

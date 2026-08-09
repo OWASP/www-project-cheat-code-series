@@ -9,9 +9,9 @@ import java.nio.file.Paths;
  * that uses canonical path comparison for path traversal detection.
  * Based on https://stackoverflow.com/questions/2375903/whats-the-best-way-to-defend-against-a-path-traversal-attack/34658355#34658355
  */
-public class SecurePathProcessor_RelativePath_Validation extends PathProcessor {
+public class Secure_ResolvedPath_JavaFileAPI_CanonicalVsAbsolute_Validator extends PathProcessor {
 
-    public SecurePathProcessor_RelativePath_Validation(String baseDirectory) {
+    public Secure_ResolvedPath_JavaFileAPI_CanonicalVsAbsolute_Validator(String baseDirectory) {
         super(baseDirectory);
     }
 

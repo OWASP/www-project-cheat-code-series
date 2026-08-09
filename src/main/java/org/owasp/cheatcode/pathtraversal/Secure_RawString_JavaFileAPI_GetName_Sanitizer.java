@@ -7,9 +7,9 @@ import java.nio.file.Paths;
  * This class contains a secure path processing implementation
  * that uses Java's built-in file name APIs for sanitization.
  */
-public class SecurePathProcessor_FileAPI_GetName extends PathProcessor {
+public class Secure_RawString_JavaFileAPI_GetName_Sanitizer extends PathProcessor {
 
-    public SecurePathProcessor_FileAPI_GetName(String baseDirectory) {
+    public Secure_RawString_JavaFileAPI_GetName_Sanitizer(String baseDirectory) {
         super(baseDirectory);
     }
 

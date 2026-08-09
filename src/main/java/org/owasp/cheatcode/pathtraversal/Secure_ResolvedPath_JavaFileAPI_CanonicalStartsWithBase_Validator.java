@@ -9,9 +9,9 @@ import java.nio.file.Paths;
  * that uses canonical path comparison to ensure paths are relative to a base directory.
  * It prevents directory traversal attacks by validating that paths don't escape the base directory.
  */
-public class SecurePathProcessor_RelativeToBaseFolder_Validation extends PathProcessor {
+public class Secure_ResolvedPath_JavaFileAPI_CanonicalStartsWithBase_Validator extends PathProcessor {
 
-    public SecurePathProcessor_RelativeToBaseFolder_Validation(String baseDirectory) {
+    public Secure_ResolvedPath_JavaFileAPI_CanonicalStartsWithBase_Validator(String baseDirectory) {
         super(baseDirectory);
     }
 

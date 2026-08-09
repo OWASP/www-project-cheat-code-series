@@ -47,7 +47,7 @@ public abstract class PathProcessor {
      * <p>Called only with a non-null, non-empty input; {@link #readFile(String)} rejects those
      * first, so no implementation needs a guard for them.
      *
-     * <p>Declared {@code throws Exception} so that all fourteen implementations share one
+     * <p>Declared {@code throws Exception} so that all fifteen implementations share one
      * signature and differ only in their body - several of them throw ESAPI's checked
      * {@code ValidationException}, and narrowing per class would make the files harder to compare.
      *

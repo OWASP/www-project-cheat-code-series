@@ -17,11 +17,11 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class SecurePathProcessor_RegexValidation_Blacklist_ExtendedTest extends BasePathProcessorTest {
+class Secure_RawString_Regex_DenyWindowsUnsafeChars_SanitizerTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new SecurePathProcessor_RegexValidation_Blacklist_Extended(baseDir);
+        return new Secure_RawString_Regex_DenyWindowsUnsafeChars_Sanitizer(baseDir);
     }
 
     @Override

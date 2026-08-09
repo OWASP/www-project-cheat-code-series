@@ -3,32 +3,41 @@ package org.owasp.cheatcode.pathtraversal;
 import java.nio.file.Paths;
 
 /**
- * This class contains a vulnerable path processing implementation
- * that performs only a simple string contains check.
+ * Vulnerable. Deletes every literal {@code ../} from the input and reads whatever is left.
  *
- * <p>It genuinely blocks the obvious payloads and falls to the ones written to beat it, which
- * makes it the most instructive implementation here: it shows that "does it validate?" is the
- * wrong question, and "what exactly does it validate, and what does it do when the check fires?"
- * is the right one.
+ * <p>The sanitizer half of a matched pair. Its twin,
+ * {@link Vulnerable_RawString_StringOps_ContainsDotDotSlash_Validator}, applies the identical
+ * rule - "this input involves {@code ../}" - and reaches the opposite result on
+ * {@code ....//....//pwnStorage//secret.txt}: the validator refuses that payload, this one
+ * manufactures a working traversal out of it. Same rule, same payload, opposite outcome. The
+ * difference is not the rule but what the code does once the rule has spoken.
+ *
+ * <p>Known bypasses:
+ * <ul>
+ *   <li>{@code ....//....//} - deleting {@code ../} splices the surrounding characters into a
+ *       fresh {@code ../}. Deleting a substring cannot be a defence when deleting it can also
+ *       create it.</li>
+ *   <li>{@code ..\..\} - the rule names a forward slash, so a backslash-separated traversal is
+ *       not touched at all, on the platform where backslash is a separator.</li>
+ * </ul>
  */
-public class VulnerablePathProcessor_Bypassable_StringContainsCheck extends PathProcessor {
+public class Vulnerable_RawString_StringOps_ContainsDotDotSlash_Sanitizer extends PathProcessor {
 
-    public VulnerablePathProcessor_Bypassable_StringContainsCheck(String baseDirectory) {
+    public Vulnerable_RawString_StringOps_ContainsDotDotSlash_Sanitizer(String baseDirectory) {
         super(baseDirectory);
     }
 
     @Override
     public String getResource(String userInput) throws Exception {
-        String fileName = userInput;
-
-        // Vulnerable: one substring, one shape of traversal. A backslash-separated payload
-        // (`..\..\`) contains no forward slash and walks straight past this check.
-        if (fileName.contains("../")) {
-            // Vulnerable: repair by deletion. Deleting `../` out of `....//` splices the
-            // surrounding characters together into a fresh `../` - the check fires, the repair
-            // runs, and the result is the traversal the check was looking for.
-            fileName = fileName.replace("../", "");
-        }
+        // Vulnerable: repair by deletion, applied unconditionally because that is what a
+        // sanitizer is - it does not ask a question, it rewrites. (Guarding this with
+        // `if (contains("../"))` changes nothing: deleting a substring that is not there
+        // returns the same string. The guard only ever made the class look like it validated.)
+        //
+        // Deleting `../` out of `....//` splices what surrounds it back together into a fresh
+        // `../`, so a payload that contained no usable traversal leaves this method containing
+        // one. The repair builds the attack.
+        String fileName = userInput.replace("../", "");
 
         return readFrom(Paths.get(baseDirectory, fileName));
     }

@@ -40,9 +40,9 @@ Requires Java 11+ and Maven. Open `target/report/index.html` for the interactive
 Useful variations:
 
 ```bash
-mvn test -Dtest=SecurePathProcessor_FileAPI_GetNameTest     # one implementation
+mvn test -Dtest=Secure_RawString_JavaFileAPI_GetName_SanitizerTest     # one implementation
 mvn test -Dtest='Vulnerable*Test'                           # all vulnerable implementations
-mvn test -Dtest=SecurePathProcessor_FileAPI_GetNameTest#AttackCase_DoubleDotTraversal   # one payload
+mvn test -Dtest=Secure_RawString_JavaFileAPI_GetName_SanitizerTest#AttackCase_DoubleDotTraversal   # one payload
 
 mvn exec:java -Dexec.mainClass=org.owasp.cheatcode.pathtraversal.Main   # console walkthrough, run from repo root
 ```
@@ -66,24 +66,25 @@ It is a single self-contained page — no CDN, no build step. Click any cell for
 
 ### WINDOWS — Windows 11, Java 25.0.3
 
-| Implementation | `legit.txt` | `SomeSubFolder/…` | `../` | `../../` | `....//` | `..\..\` | `\0` |
-| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| **Vulnerable by design** | | | | | | | |
-| `Default_NoChecks` | 🟢 ok | 🟢 ok | 🟡 MISS | 🔴 BREACH | 🟡 MISS | 🔴 BREACH | 🟡 jdk |
-| `Default_NoChecks_ImproperPathConcat` | 🟢 ok | 🟢 ok | 🟡 MISS | 🔴 BREACH | 🟡 MISS | 🔴 BREACH | 🟡 jdk |
-| `ImproperAPIUse_MultipartFileGetOriginalName` | 🟢 ok | 🟢 ok | 🟡 MISS | 🔴 BREACH | 🟡 MISS | 🔴 BREACH | 🟡 jdk |
-| `Bypassable_StringContainsCheck` | 🟢 ok | 🟢 ok | 🟢 rewritten | 🟢 rewritten | 🔴 BREACH | 🔴 BREACH | 🟡 jdk |
-| **Secure** | | | | | | | |
-| `FileAPI_GetName` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟡 jdk |
-| `RegexValidation_Blacklist_Simple` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟡 jdk |
-| `StringContains_Simple` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟡 jdk |
-| `ESAPI_DefaultFileNameValidation` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused |
-| `ESAPI_FileNameValidation` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused |
-| `RegexValidation_Blacklist_Extended` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 ok* |
-| `RegexValidation_Whitelist_AlphaNumericDot` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 ok* |
-| `ESAPI_CombinedDirectoryAndFileNameValidation` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused |
-| `RelativePath_Validation` | 🟢 ok | 🟢 ok | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused |
-| `RelativeToBaseFolder_Validation` | 🟢 ok | 🟢 ok | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused |
+| Implementation | `legit.txt` | `SomeSubFolder/…` | `../` | `../../` | `....//` | `..\..\` | `\0` | Discipline |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | --- |
+| **Vulnerable by design** | | | | | | | | |
+| `None_JavaNIO_PathsGet` | 🟢 ok | 🟢 ok | 🟡 MISS | 🔴 BREACH | 🟡 MISS | 🔴 BREACH | 🟡 jdk | No defence |
+| `None_JavaNIO_StringConcat` | 🟢 ok | 🟢 ok | 🟡 MISS | 🔴 BREACH | 🟡 MISS | 🔴 BREACH | 🟡 jdk | No defence |
+| `None_Spring_GetOriginalFilename` | 🟢 ok | 🟢 ok | 🟡 MISS | 🔴 BREACH | 🟡 MISS | 🔴 BREACH | 🟡 jdk | False sanitizer |
+| `RawString_StringOps_ContainsDotDotSlash` | 🟢 ok | 🟢 ok | 🟢 rewritten | 🟢 rewritten | 🔴 BREACH | 🔴 BREACH | 🟡 jdk | Sanitizer |
+| `RawString_StringOps_ContainsDotDotSlash` | 🟢 ok | 🟢 ok | 🟢 refused | 🟢 refused | 🟢 refused | 🔴 BREACH | 🟡 jdk | Validator |
+| **Secure** | | | | | | | | |
+| `RawString_JavaFileAPI_GetName` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟡 jdk | Sanitizer |
+| `RawString_Regex_DenySeparators` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟡 jdk | Sanitizer |
+| `RawString_StringOps_StripSeparators` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟡 jdk | Sanitizer |
+| `RawString_ESAPI_DirectoryAndFileName` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | Validator |
+| `RawString_ESAPI_FileNameFromConfig` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | Validator |
+| `RawString_ESAPI_FileNameHardCodedExtensions` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | Validator |
+| `RawString_Regex_AllowAlphaNumericDot` | 🟢 ok | 🟠 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | Validator |
+| `RawString_Regex_DenyWindowsUnsafeChars` | 🟢 ok | 🟠 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 rewritten | 🟢 ok* | Sanitizer |
+| `ResolvedPath_JavaFileAPI_CanonicalStartsWithBase` | 🟢 ok | 🟢 ok | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | Validator |
+| `ResolvedPath_JavaFileAPI_CanonicalVsAbsolute` | 🟢 ok | 🟢 ok | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | 🟢 refused | Validator |
 
 **Verdict** — what the outcome means, given what the payload was trying to do:
 
@@ -106,12 +107,14 @@ It is a single self-contained page — no CDN, no build step. Click any cell for
 
 Note the same code carrying opposite meanings by column: `rewritten` against an attack is a block, `rewritten` against `SomeSubFolder/…` is broken functionality. The colour carries the judgement; the code just says what happened.
 
-### Four lessons the matrix makes concrete
+### Five lessons the matrix makes concrete
 
-- **Blacklists partially work.** `Bypassable_StringContainsCheck` rejects `../` and stops the two obvious payloads, then falls to `....//` (which reassembles into `../` after naive stripping) and to `..\`. No per-class "is this vulnerable?" flag can describe that row — which is why expectations are declared per cell.
-- **Filename-only defences cost you subdirectories.** Every approach that reduces input to a bare filename blocks all four traversals and can no longer serve `SomeSubFolder/sublegit.txt`. Only the two canonicalisation-and-containment approaches keep legitimate nested access *and* block every payload.
-- **Half the implementations owe their null-byte "pass" to the JDK.** Seven of fourteen record `jdk` for `\0`: `Paths.get` throws `InvalidPathException` and the implementation never looked at the input. A pass/fail table shows all fourteen as green here. Only `RegexValidation_Whitelist_AlphaNumericDot`, `RegexValidation_Blacklist_Extended`, the ESAPI trio and the two canonical validators handle it themselves — and the allow-list does so without any rule mentioning NUL, which is the concrete argument for allow-lists over deny-lists.
+- **Refusing and repairing are not the same defence, even with the identical rule.** The two `RawString_StringOps_ContainsDotDotSlash` rows differ *only* in the Discipline column. Both ask "does this input contain `../`?". The Validator refuses and scores `refused` on `....//`; the Sanitizer deletes the match, which splices the surrounding characters into a fresh `../`, and scores `BREACH`. One rule, one payload, opposite results — the whole argument for the discipline slot in one pair of rows. Both remain vulnerable to `..\..\`, because refusing cannot complete an incomplete rule.
+- **A sanitizer's cost is silent; a validator's is audible.** Compare the `SomeSubFolder/…` column. `rewritten` means the caller asked for one file and the application read a different one, with no error raised anywhere. `refused` means the caller was told. Both lost the same functionality. This is why the project recommends validation and treats sanitization as a fallback — see `Secure_RawString_Regex_AllowAlphaNumericDot_Validator`, the reference implementation.
+- **Filename-only defences cost you subdirectories.** Every approach that reduces input to a bare filename blocks all four traversals and can no longer serve `SomeSubFolder/sublegit.txt` — visible as a solid orange column. Only the two `ResolvedPath` approaches keep legitimate nested access *and* block every payload, which is exactly what the Strategy slot predicts.
+- **More than half the implementations owe their null-byte "pass" to the JDK.** Eight of fifteen record `jdk` for `\0`: `Paths.get` throws `InvalidPathException` and the implementation never looked at the input. A pass/fail table shows all fifteen as green here. The allow-list validator handles it *without any rule mentioning NUL* — nothing that is not alphanumeric gets through — which is the concrete argument for allow-lists over deny-lists, and means its defence survives a platform with laxer path parsing.
 - **Not being detected is not the same as being blocked.** `MISS` marks payloads that no implementation caught and that failed only because `../` from the base directory lands one level short of `pwnStorage/`. Move the fixture and those cells become breaches.
+- **An API that looks like a defence is worse than no defence.** `None_Spring_GetOriginalFilename` scores identically to `None_JavaNIO_PathsGet` on all seven payloads — the matrix cannot tell them apart. The difference is that `getOriginalFilename()` sits exactly where a sanitizer would sit and reads like one. That trap lives in the class name (`FalseSanitizer`) because there is nowhere else it can live.
 
 Results are recorded per platform. Only Windows has been run so far; the `..\..\` column in particular is expected to differ on POSIX, where a backslash is an ordinary filename character rather than a separator. Those cells are declared for `WINDOWS` specifically, so a Linux run reports them as `UNDECLARED` rather than as regressions.
 
@@ -153,7 +156,7 @@ The committed [`secureStorage/`](secureStorage/) and [`pwnStorage/`](pwnStorage/
 
 ## Contributing a new example
 
-**A new implementation** — add the class to `src/main/java/.../pathtraversal/` following the `{Vulnerable|Secure}PathProcessor_{Technique}_{Variant}` naming convention, register it in `Main.createProcessors()`, and add a test class extending [`BasePathProcessorTest`](src/test/java/org/owasp/cheatcode/pathtraversal/BasePathProcessorTest.java) that overrides `createProcessor`, `getProcessorName`, `describe` and `expected`. **Never add test methods to an individual test class.**
+**A new implementation** — add the class to `src/main/java/.../pathtraversal/` following the `{Verdict}_{Strategy}_{Library}_{Variant}_{Discipline}` naming convention, register it in `Main.createProcessors()`, and add a test class extending [`BasePathProcessorTest`](src/test/java/org/owasp/cheatcode/pathtraversal/BasePathProcessorTest.java) that overrides `createProcessor`, `getProcessorName`, `describe` and `expected`. **Never add test methods to an individual test class.**
 
 Run it first. Every cell will fail as `UNDECLARED`, printing the observed outcome and the exact `.expect(...)` line to add. Check that each observed outcome is actually correct, *then* declare it — an expectation written before the run is a guess, and looking at the results before recording them is the review step.
 

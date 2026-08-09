@@ -12,14 +12,14 @@ import org.owasp.esapi.ESAPI;
  * Both the accepted file name pattern (Validator.FileName) and the accepted extensions
  * (HttpUtilities.ApprovedUploadExtensions) come from src/main/resources/esapi/ESAPI.properties,
  * so the policy can be changed without recompiling. Compare with
- * SecurePathProcessor_ESAPI_DefaultFileNameValidation, which hard-codes its extension list.
+ * Secure_RawString_ESAPI_FileNameHardCodedExtensions_Validator, which hard-codes its extension list.
  *
  * Note: getValidFileName rejects a null or empty extension list outright, so the configured
  * list must be passed explicitly - there is no "any extension" mode.
  */
-public class SecurePathProcessor_ESAPI_FileNameValidation extends PathProcessor {
+public class Secure_RawString_ESAPI_FileNameFromConfig_Validator extends PathProcessor {
 
-    public SecurePathProcessor_ESAPI_FileNameValidation(String baseDirectory) {
+    public Secure_RawString_ESAPI_FileNameFromConfig_Validator(String baseDirectory) {
         super(baseDirectory);
     }
 

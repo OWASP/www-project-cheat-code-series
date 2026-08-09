@@ -63,20 +63,22 @@ public class Main {
      */
     private static PathProcessor[] createProcessors() {
         return new PathProcessor[] {
-            new VulnerablePathProcessor_Default_NoChecks(BASE_DIR),
-            new VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat(BASE_DIR),            
-            new VulnerablePathProcessor_Bypassable_StringContainsCheck(BASE_DIR),
-            new VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalName(BASE_DIR),
-            new SecurePathProcessor_StringContains_Simple(BASE_DIR),
-            new SecurePathProcessor_RegexValidation_Blacklist_Simple(BASE_DIR),
-            new SecurePathProcessor_RegexValidation_Blacklist_Extended(BASE_DIR),
-            new SecurePathProcessor_RegexValidation_Whitelist_AlphaNumericDot(BASE_DIR),
-            new SecurePathProcessor_RelativePath_Validation(BASE_DIR),
-            new SecurePathProcessor_RelativeToBaseFolder_Validation(BASE_DIR),
-            new SecurePathProcessor_FileAPI_GetName(BASE_DIR),
-            new SecurePathProcessor_ESAPI_FileNameValidation(BASE_DIR),
-            new SecurePathProcessor_ESAPI_DefaultFileNameValidation(BASE_DIR),
-            new Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation(BASE_DIR)
+            new Vulnerable_None_JavaNIO_PathsGet_NoDefence(BASE_DIR),
+            new Vulnerable_None_JavaNIO_StringConcat_NoDefence(BASE_DIR),            
+            // Adjacent on purpose: identical `../` rule, refused by one and repaired by the other.
+            new Vulnerable_RawString_StringOps_ContainsDotDotSlash_Validator(BASE_DIR),
+            new Vulnerable_RawString_StringOps_ContainsDotDotSlash_Sanitizer(BASE_DIR),
+            new Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizer(BASE_DIR),
+            new Secure_RawString_StringOps_StripSeparators_Sanitizer(BASE_DIR),
+            new Secure_RawString_Regex_DenySeparators_Sanitizer(BASE_DIR),
+            new Secure_RawString_Regex_DenyWindowsUnsafeChars_Sanitizer(BASE_DIR),
+            new Secure_RawString_Regex_AllowAlphaNumericDot_Validator(BASE_DIR),
+            new Secure_ResolvedPath_JavaFileAPI_CanonicalVsAbsolute_Validator(BASE_DIR),
+            new Secure_ResolvedPath_JavaFileAPI_CanonicalStartsWithBase_Validator(BASE_DIR),
+            new Secure_RawString_JavaFileAPI_GetName_Sanitizer(BASE_DIR),
+            new Secure_RawString_ESAPI_FileNameFromConfig_Validator(BASE_DIR),
+            new Secure_RawString_ESAPI_FileNameHardCodedExtensions_Validator(BASE_DIR),
+            new Secure_RawString_ESAPI_DirectoryAndFileName_Validator(BASE_DIR)
         };
     }
 

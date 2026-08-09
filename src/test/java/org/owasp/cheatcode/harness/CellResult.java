@@ -13,7 +13,7 @@ package org.owasp.cheatcode.harness;
 public final class CellResult {
 
     /** Bumped when the shape of this record changes incompatibly. */
-    public int schemaVersion = 2;
+    public int schemaVersion = 3;
 
     public String vulnerabilityClass;
 
@@ -27,6 +27,14 @@ public final class CellResult {
     public String implementationLabel;
     public String implementationNote;
     public boolean vulnerableByDesign;
+    /**
+     * What the implementation does once it holds the input — {@code VALIDATOR}, {@code SANITIZER},
+     * {@code NO_DEFENCE} or {@code FALSE_SANITIZER}, read from the last slot of the class name.
+     *
+     * <p>{@code null} only for a class that carries no slot. The suite fails a cell whose observed
+     * behaviour contradicts this, so it is a checked claim rather than a label.
+     */
+    public String discipline;
 
     // --- the payload --------------------------------------------------------
     public String payloadId;

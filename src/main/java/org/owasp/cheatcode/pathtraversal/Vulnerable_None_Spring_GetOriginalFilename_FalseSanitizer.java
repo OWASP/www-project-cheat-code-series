@@ -11,9 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
  * This is vulnerable because getOriginalFilename() returns the original filename
  * from the client without any sanitization, making it susceptible to path traversal attacks.
  */
-public class VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalName extends PathProcessor {
+public class Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizer extends PathProcessor {
 
-    public VulnerablePathProcessor_ImproperAPIUse_MultipartFileGetOriginalName(String baseDirectory) {
+    public Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizer(String baseDirectory) {
         super(baseDirectory);
     }
 

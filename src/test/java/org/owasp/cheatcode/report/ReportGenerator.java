@@ -157,8 +157,31 @@ public final class ReportGenerator {
      * Strips the {@code {Vulnerable|Secure}PathProcessor_} prefix, which every row carries and
      * which the group heading already states.
      */
+    /**
+     * The middle slots of an implementation's name — strategy, library and variant.
+     *
+     * <p>The leading verdict slot and the trailing discipline slot are both dropped, because the
+     * report already carries each of them in its own place: the verdict as the group heading, the
+     * discipline as a column. Repeating them in the row header would cost width and say nothing.
+     */
     static String shortName(String implementation) {
-        return implementation.replaceFirst("^(Vulnerable|Secure)_?PathProcessor_", "");
+        return implementation
+                .replaceFirst("^(Vulnerable|Secure)_", "")
+                .replaceFirst("_(Validator|Sanitizer|NoDefence|FalseSanitizer)$", "");
+    }
+
+    /** The discipline slot rendered for a reader: {@code FALSE_SANITIZER} to "False sanitizer". */
+    static String disciplineLabel(String discipline) {
+        if (discipline == null) {
+            return "—";
+        }
+        switch (discipline) {
+            case "VALIDATOR":       return "Validator";
+            case "SANITIZER":       return "Sanitizer";
+            case "NO_DEFENCE":      return "No defence";
+            case "FALSE_SANITIZER": return "False sanitizer";
+            default:                return discipline;
+        }
     }
 
     static String verdictDot(String verdict) {

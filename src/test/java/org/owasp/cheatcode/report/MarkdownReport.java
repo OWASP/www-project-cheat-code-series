@@ -54,8 +54,10 @@ final class MarkdownReport {
         for (String column : columns) {
             out.append(" `").append(column).append("` |");
         }
+        out.append(" Discipline |");
         out.append("\n| --- |");
         out.append(" :-: |".repeat(columns.size()));
+        out.append(" --- |");
         out.append('\n');
 
         Map<String, List<CellResult>> byImplementation = platformCells.stream()
@@ -70,10 +72,10 @@ final class MarkdownReport {
         for (Map.Entry<String, List<CellResult>> entry : ordered) {
             boolean vulnerable = entry.getValue().get(0).vulnerableByDesign;
             if (vulnerable && !vulnerableHeaderWritten) {
-                out.append("| **Vulnerable by design** |").append(" |".repeat(columns.size())).append('\n');
+                out.append("| **Vulnerable by design** |").append(" |".repeat(columns.size() + 1)).append('\n');
                 vulnerableHeaderWritten = true;
             } else if (!vulnerable && !secureHeaderWritten) {
-                out.append("| **Secure** |").append(" |".repeat(columns.size())).append('\n');
+                out.append("| **Secure** |").append(" |".repeat(columns.size() + 1)).append('\n');
                 secureHeaderWritten = true;
             }
             renderRow(out, entry.getKey(), entry.getValue(), columns);
@@ -104,6 +106,9 @@ final class MarkdownReport {
             }
             out.append(" |");
         }
+        out.append(' ')
+           .append(ReportGenerator.disciplineLabel(rowCells.get(0).discipline))
+           .append(" |");
         out.append('\n');
     }
 

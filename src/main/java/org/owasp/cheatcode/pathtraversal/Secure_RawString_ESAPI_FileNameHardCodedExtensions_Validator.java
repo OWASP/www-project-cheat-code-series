@@ -10,13 +10,13 @@ import org.owasp.esapi.ESAPI;
  * This class contains a secure path processing implementation
  * that uses OWASP ESAPI's file name validation.
  */
-public class SecurePathProcessor_ESAPI_DefaultFileNameValidation extends PathProcessor {
+public class Secure_RawString_ESAPI_FileNameHardCodedExtensions_Validator extends PathProcessor {
 
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
         "txt", "pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "gif"
     );
 
-    public SecurePathProcessor_ESAPI_DefaultFileNameValidation(String baseDirectory) {
+    public Secure_RawString_ESAPI_FileNameHardCodedExtensions_Validator(String baseDirectory) {
         super(baseDirectory);
     }
 

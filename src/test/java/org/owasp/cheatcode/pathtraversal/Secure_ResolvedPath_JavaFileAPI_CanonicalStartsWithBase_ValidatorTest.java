@@ -16,11 +16,11 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class SecurePathProcessor_RelativeToBaseFolder_ValidationTest extends BasePathProcessorTest {
+class Secure_ResolvedPath_JavaFileAPI_CanonicalStartsWithBase_ValidatorTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new SecurePathProcessor_RelativeToBaseFolder_Validation(baseDir);
+        return new Secure_ResolvedPath_JavaFileAPI_CanonicalStartsWithBase_Validator(baseDir);
     }
 
     @Override

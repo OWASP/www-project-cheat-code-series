@@ -135,6 +135,9 @@ final class HtmlReport {
                .append(meta.payloadKind.toLowerCase()).append("\">")
                .append(meta.payloadKind.charAt(0)).append("</span></th>");
         }
+        out.append("<th class=\"disciplinehead\" title=\"What the implementation does once it "
+                 + "holds the input. Read from the last slot of its class name, and checked "
+                 + "against what it was observed to do.\">Discipline</th>");
         out.append("</tr>\n</thead>\n<tbody>\n");
 
         Map<String, List<CellResult>> byImplementation = platformCells.stream()
@@ -149,10 +152,10 @@ final class HtmlReport {
             List<CellResult> rowCells = entry.getValue();
             boolean vulnerable = rowCells.get(0).vulnerableByDesign;
             if (vulnerable && !vulnerableGroupOpen) {
-                groupRow(out, "Vulnerable by design", columns.size());
+                groupRow(out, "Vulnerable by design", columns.size() + 1);
                 vulnerableGroupOpen = true;
             } else if (!vulnerable && !secureGroupOpen) {
-                groupRow(out, "Secure", columns.size());
+                groupRow(out, "Secure", columns.size() + 1);
                 secureGroupOpen = true;
             }
 
@@ -178,6 +181,9 @@ final class HtmlReport {
                    .append(escape(ReportGenerator.shortCode(cell.actualOutcome)))
                    .append("</td>");
             }
+            out.append("<td class=\"discipline\">")
+               .append(escape(ReportGenerator.disciplineLabel(rowCells.get(0).discipline)))
+               .append("</td>");
             out.append("</tr>\n");
         }
         out.append("</tbody>\n</table>\n</div>\n</section>\n");
@@ -318,6 +324,8 @@ final class HtmlReport {
             "  border-radius:10px;padding:1rem 1.15rem;min-height:5rem}",
             ".detail .hint{color:var(--muted);margin:0}",
             ".detail h3{margin-top:0}",
+            ".discipline{font-size:.78rem;white-space:nowrap;text-align:left;padding-left:.6rem;opacity:.85}",
+            ".disciplinehead{text-align:left;padding-left:.6rem}",
             ".detail dl{display:grid;grid-template-columns:max-content 1fr;gap:.3rem .9rem;margin:.75rem 0}",
             ".detail dt{color:var(--muted);font-size:.82rem}",
             ".detail dd{margin:0;font-size:.88rem;word-break:break-word}",

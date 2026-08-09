@@ -18,24 +18,25 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class VulnerablePathProcessor_Bypassable_StringContainsCheckTest extends BasePathProcessorTest {
+class Vulnerable_RawString_StringOps_ContainsDotDotSlash_SanitizerTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new VulnerablePathProcessor_Bypassable_StringContainsCheck(baseDir);
+        return new Vulnerable_RawString_StringOps_ContainsDotDotSlash_Sanitizer(baseDir);
     }
 
     @Override
     String getProcessorName() {
-        return "Vulnerable Path Processor (Bypassable 'String Contains' Check)";
+        return "Vulnerable — `../` contains-rule, applied as a sanitizer";
     }
 
     @Override
     String describe() {
-        return "Rejects any input containing the literal `../`, and repairs by deleting it. The "
-             + "most instructive row in the matrix: a defence that genuinely works against the "
-             + "obvious payloads and fails against the ones written to beat it. A per-class "
-             + "'is this vulnerable?' flag could not describe this row at all.";
+        return "Deletes every literal `../` and reads what is left. Compare the Validator row "
+             + "directly above: identical rule, opposite result on `....//`, because deleting "
+             + "`../` splices a fresh one out of the surrounding characters. The pair is the "
+             + "argument that 'does it validate?' is the wrong question - what the code does "
+             + "once the rule has fired decides the outcome.";
     }
 
     @Override

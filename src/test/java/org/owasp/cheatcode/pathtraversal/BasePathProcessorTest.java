@@ -11,6 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.opentest4j.AssertionFailedError;
 
 import org.owasp.cheatcode.harness.CellResult;
+import org.owasp.cheatcode.harness.Discipline;
 import org.owasp.cheatcode.harness.Expectation;
 import org.owasp.cheatcode.harness.Expectations;
 import org.owasp.cheatcode.harness.Outcome;
@@ -30,7 +31,7 @@ import org.owasp.cheatcode.harness.Verdict;
  * <p>Each concrete class does re-declare these seven methods, as {@code @Test @Override} stubs
  * calling {@code super}, folded into a {@code // #region} at the end of the file. They change
  * nothing about the run; they exist because the VS Code Test Explorer discovers only methods a
- * class declares, never one it inherits. A new payload therefore needs a stub in all fourteen
+ * class declares, never one it inherits. A new payload therefore needs a stub in all fifteen
  * classes as well as a {@code @Test} here — see {@code .design_docs/test_run_options.md}.
  *
  * <h2>Green means "matches what was recorded", not "nothing is vulnerable"</h2>
@@ -149,12 +150,52 @@ abstract class BasePathProcessorTest {
 
         record(payload, platform, result, actual, verdict, expectation);
 
+        assertDisciplineHolds(payload, result, actual);
+
         if (expectation == null) {
             throw new AssertionFailedError(undeclaredMessage(payload, platform, result, actual, verdict));
         }
 
         assertEquals(expectation.outcome(), actual,
                 () -> mismatchMessage(payload, platform, result, actual, verdict, expectation));
+    }
+
+    /**
+     * Checks the implementation against the discipline its own class name claims.
+     *
+     * <p>Orthogonal to the outcome matrix, and a different kind of failure: the matrix asks
+     * "did this change?", while this asks "does the code do what it is filed under?". A class
+     * named {@code _Validator} that rewrites input is mis-shelved in the report and mis-taught
+     * to anyone reading the tree - and it is the exact defect behind the {@code ....//} breach,
+     * where a check fires and a repair runs anyway.
+     *
+     * <p>Fails ahead of the outcome assertion on purpose. An implementation whose discipline is
+     * wrong will usually also produce a surprising outcome, and the discipline message names the
+     * cause where the outcome message can only name the symptom.
+     */
+    private void assertDisciplineHolds(Payload payload, ReadFileResult result, Outcome actual) {
+        Discipline discipline = Discipline.fromClassName(processor.getClass().getSimpleName());
+        if (discipline == null) {
+            return;
+        }
+
+        Boolean rewritten = result == null ? null : OutcomeClassifier.inputRewritten(result);
+        String violation = discipline.violatedBy(actual, rewritten);
+        if (violation == null) {
+            return;
+        }
+
+        throw new AssertionFailedError(
+                "DISCIPLINE VIOLATION"
+              + "\n\n  " + processor.getClass().getSimpleName()
+              + "\n  is " + violation
+              + "\n\n  payload        : " + payload.display()
+              + "\n  outcome        : " + actual
+              + "\n  input rewritten: " + rewritten
+              + "\n\nEither the implementation changed, or the last slot of its class name is "
+              + "wrong."
+              + "\nFix whichever is actually wrong - do not rename the class just to silence "
+              + "this.");
     }
 
     // -- reporting -----------------------------------------------------------
@@ -172,6 +213,9 @@ abstract class BasePathProcessorTest {
         cell.implementationLabel = getProcessorName();
         cell.implementationNote = describe();
         cell.vulnerableByDesign = cell.implementation.startsWith("Vulnerable");
+
+        Discipline discipline = Discipline.fromClassName(cell.implementation);
+        cell.discipline = discipline == null ? null : discipline.name();
 
         cell.payloadId = payload.id();
         cell.payloadLiteral = payload.literal();

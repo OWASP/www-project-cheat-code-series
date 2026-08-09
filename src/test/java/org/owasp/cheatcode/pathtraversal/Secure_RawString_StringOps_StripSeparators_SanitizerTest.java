@@ -17,11 +17,11 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class SecurePathProcessor_StringContains_SimpleTest extends BasePathProcessorTest {
+class Secure_RawString_StringOps_StripSeparators_SanitizerTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new SecurePathProcessor_StringContains_Simple(baseDir);
+        return new Secure_RawString_StringOps_StripSeparators_Sanitizer(baseDir);
     }
 
     @Override

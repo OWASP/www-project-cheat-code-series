@@ -12,12 +12,12 @@ import org.owasp.esapi.errors.ValidationException;
  * This class contains a secure path processing implementation
  * that uses OWASP ESAPI's directory path validation.
  */
-public class Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation extends PathProcessor {
+public class Secure_RawString_ESAPI_DirectoryAndFileName_Validator extends PathProcessor {
 
     // List of allowed file extensions
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("txt", "pdf", "doc", "docx", "xls", "xlsx");
 
-    public Secure_PathProcessor_ESAPI_CombinedDirectoryAndFileNameValidation(String baseDirectory) {
+    public Secure_RawString_ESAPI_DirectoryAndFileName_Validator(String baseDirectory) {
         super(baseDirectory);
     }
 

@@ -18,11 +18,11 @@ import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SIMPLE_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.LEGIT_SUBFOLDER_FILE;
 import static org.owasp.cheatcode.pathtraversal.Payload.MALFORMED_NULL_BYTE;
 
-class VulnerablePathProcessor_Default_NoChecks_ImproperPathConcatTest extends BasePathProcessorTest {
+class Vulnerable_None_JavaNIO_StringConcat_NoDefenceTest extends BasePathProcessorTest {
 
     @Override
     PathProcessor createProcessor(String baseDir) {
-        return new VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat(baseDir);
+        return new Vulnerable_None_JavaNIO_StringConcat_NoDefence(baseDir);
     }
 
     @Override

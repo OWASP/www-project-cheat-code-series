@@ -15,7 +15,7 @@ The point of the PoC is *comparison*: a developer should be able to look at the 
 
 ```bash
 mvn clean test                                    # all tests; green when reality matches the declared matrix
-mvn test -Dtest=SecurePathProcessor_FileAPI_GetNameTest   # one test class
+mvn test -Dtest=Secure_RawString_JavaFileAPI_GetName_SanitizerTest   # one test class
 mvn test -Dtest='Vulnerable*Test'                 # subset by pattern
 mvn test -Dtest=Foo#AttackCase_DoubleDotTraversal # one test method
 mvn exec:java@report                              # build target/report/index.html + results-table.md
@@ -29,10 +29,11 @@ Java 11, JUnit 5, Mockito, OWASP ESAPI 2.6, Gson (test scope only). There is no 
 
 This changed in August 2026 — see [.design_docs/test-outcome-matrix.md](.design_docs/test-outcome-matrix.md) for the full rationale, including what was rejected. Anything you remember about `testFailureIgnore` and "22 expected failures" is obsolete.
 
-Each test class declares, per payload, what its implementation does. The suite compares that declaration against what actually happens. **`mvn test` is green — 98 tests, 0 failures — and a red test is a real signal**, one of:
+Each test class declares, per payload, what its implementation does. The suite compares that declaration against what actually happens. **`mvn test` is green — 105 tests, 0 failures — and a red test is a real signal**, one of:
 
 - **`MISMATCH`** — an implementation moved. Either a change altered its behaviour, or the declaration was wrong.
 - **`UNDECLARED`** — a cell nobody has recorded an expectation for. The failure message prints the observed outcome and the exact `.expect(...)` line to add.
+- **`DISCIPLINE VIOLATION`** — the implementation contradicted the discipline its own class name claims: a `_Validator` that rewrote the input, or a `_Sanitizer` that threw. Checked by `Discipline.violatedBy`, asserted ahead of the outcome comparison because it names the cause rather than the symptom. Fix the code or the name — never rename a class just to silence it.
 
 Green does **not** mean "nothing is vulnerable". A vulnerable processor that discloses the secret is a *passing* test, because `SECRET_DISCLOSED` is what it was declared to do. The demonstration is carried by the recorded outcome and the generated report, not by a failing assertion.
 
@@ -43,7 +44,7 @@ Green does **not** mean "nothing is vulnerable". A vulnerable processor that dis
 [Outcome](src/test/java/org/owasp/cheatcode/harness/Outcome.java) has nine values and is deliberately richer than pass/fail, because pass/fail cannot distinguish a rejection from a silent rewrite. Two values matter most:
 
 - **`UNDETECTED_MISS`** — the implementation read from exactly the path the raw input names, changing nothing; the read failed only because `../` from the base directory lands one level short of `pwnStorage/`. A near miss, never a defence.
-- **`REJECTED_BY_RUNTIME`** — the JDK refused the path (`InvalidPathException` on an embedded NUL), not the implementation. Seven of fourteen implementations score this on the null-byte payload; the old pass/fail table showed all fourteen as clean.
+- **`REJECTED_BY_RUNTIME`** — the JDK refused the path (`InvalidPathException` on an embedded NUL), not the implementation. Eight of fifteen implementations score this on the null-byte payload; the old pass/fail table showed all fifteen as clean.
 
 `SANITIZE_FAILED` was merged into `REJECTED` in August 2026: without a separate sanitize phase, "refused outright" and "the repair attempt threw" are the same event from where the caller stands — no file named, an exception returned. Which route was taken is still visible in `evidence.exceptionClass` and in the implementation's own code.
 
@@ -62,11 +63,40 @@ Classification lives entirely in [OutcomeClassifier](src/test/java/org/owasp/che
 - `readFrom(Path)` — the only sanctioned route to content. It reads and records the resolved path. Calling `Files.readString` directly leaves the report blind and breaks the rewrite derivation.
 - `readFile(String)` — `final`, harness-facing. Runs `getResource`, guards null/empty input, and *reports* the result rather than throwing, so a processor that silently succeeds at an attack stays visible.
 
-Refusing means throwing. Repairing means changing the string and reading the result — in plain code, with no framework flag. A processor whose technique repairs input still repairs it; that is deliberate, because [VulnerablePathProcessor_Bypassable_StringContainsCheck](src/main/java/org/owasp/cheatcode/pathtraversal/VulnerablePathProcessor_Bypassable_StringContainsCheck.java)'s `....//` breach exists precisely because deleting `../` reassembles one, and the secure rewriters' cost to `SomeSubFolder/` is the matrix's central lesson.
+### Validation is the recommendation; sanitization is the fallback
+
+The project's design position, and it should be visible in every header, every `describe()` and the report. **Production code should validate and refuse. Sanitizing is what you do when something outside your control forces you to accept input you cannot reject.**
+
+The security argument is the familiar one — repair-by-deletion can assemble the payload it removes, which is why `Vulnerable_RawString_StringOps_ContainsDotDotSlash_Sanitizer` discloses the secret on `....//`. The argument that generalises further is about *predictability*: a sanitizer silently changes which file gets read. The caller asks for `SomeSubFolder/sublegit.txt` and the application serves `SomeSubFoldersublegit.txt`, or nothing, and raises no error anywhere. Nobody is told the request was not honoured. A validator loses exactly the same functionality and says so.
+
+[Secure_RawString_Regex_AllowAlphaNumericDot_Validator](src/main/java/org/owasp/cheatcode/pathtraversal/Secure_RawString_Regex_AllowAlphaNumericDot_Validator.java) is the reference implementation — an allow-list, refusing. It was a sanitizer until August 2026; the conversion is what the position looks like applied. Two cells moved and both are informative: `SomeSubFolder/` went `SANITIZED_MISS` → `REJECTED` (same loss, now audible), and the null byte went `SANITIZED_HIT` → `REJECTED`, meaning the defence is now the implementation's rather than the JDK's and survives a platform with laxer path parsing.
+
+When adding a `Sanitizer`, name the constraint that makes repair the only option. If none can be named, the class is a counter-example, not a recommendation, and its header must say so.
+
+**Each implementation commits to one discipline, and its name says which.** A `Validator` refuses by throwing and never rewrites. A `Sanitizer` rewrites unconditionally and never refuses. A `NoDefence` does neither. Do not write the hybrid shape — `if (looksBad(input)) { input = repair(input); }` — unless the class exists to exhibit it: four classes carried that guard until August 2026 and in every one it was provably dead, because a repair is a no-op exactly when its own check says the input is clean. The guard bought nothing and implied a validation phase that was not there.
+
+The distinction is the matrix's central lesson, and there is a matched pair to prove it: [Vulnerable_RawString_StringOps_ContainsDotDotSlash_Validator](src/main/java/org/owasp/cheatcode/pathtraversal/Vulnerable_RawString_StringOps_ContainsDotDotSlash_Validator.java) and [its Sanitizer twin](src/main/java/org/owasp/cheatcode/pathtraversal/Vulnerable_RawString_StringOps_ContainsDotDotSlash_Sanitizer.java) apply the identical rule — "this input involves `../`" — and differ on exactly one cell of seven. On `....//....//pwnStorage//secret.txt` the validator scores `REJECTED` and the sanitizer scores `SECRET_DISCLOSED`, because deleting `../` splices a fresh one out of what surrounded it. Both remain `Vulnerable` on their own merit, since `..\..\` defeats each. Keep them adjacent in `Main.createProcessors()` and in the report.
+
+Refusing means throwing. Repairing means changing the string and reading the result — in plain code, with no framework flag. The secure rewriters' cost to `SomeSubFolder/` is the same lesson seen from the other side.
 
 Every outcome is recorded on [ReadFileResult](src/main/java/org/owasp/cheatcode/pathtraversal/ReadFileResult.java) — public mutable fields, deliberately: `baseDirectory`, `userProvidedPath`, `resolvedPath`, `fileReadResult` and `fileReadException` are observed rather than exceptions being caught. `OutcomeClassifier` reads them to decide the cell's `Outcome`; tests assert on that, never on the raw fields.
 
-Class names are the documentation. The pattern is `{Vulnerable|Secure}PathProcessor_{Technique}_{Variant}` — keep it, since the comparison table in the README and the test output are read by name.
+Class names are the documentation. The pattern is **`{Verdict}_{Strategy}_{Library}_{Variant}_{Discipline}`** — keep it, since the comparison table in the README and the test output are read by name. Adopted August 2026; anything you remember about `{Vulnerable|Secure}PathProcessor_{Technique}_{Variant}` is obsolete, and the `PathProcessor` infix is gone because the package already says it. See [.design_docs/naming-scheme-decision.md](.design_docs/naming-scheme-decision.md) for the full rationale, including why underscores deviate from Java convention on purpose.
+
+| Slot | Question | Vocabulary |
+|---|---|---|
+| Verdict | May I use this? | `Secure`, `Vulnerable` |
+| Strategy | What does the code decide on? | `RawString`, `LexicalPath`, `ResolvedPath`, `Indirection`, `None` |
+| Library | What do I call? | `JavaNIO`, `JavaFileAPI`, `Regex`, `StringOps`, `ESAPI`, `Spring` |
+| Variant | Which flavour of that call? | free text |
+| Discipline | What does it do once it holds the input? | `Validator`, `Sanitizer`, `NoDefence`, `FalseSanitizer` |
+
+Rules that are easy to get wrong:
+
+- **A library is never a strategy.** ESAPI file-name validation is a whitelist regex over the string → `RawString`. `File.getName()` does no resolution → `RawString`; it is secure because it *discards* the directory portion, not because it resolves anything.
+- **`ConditionallySecure` is deliberately not in the Verdict vocabulary yet.** Naming a class that asserts a symlink, TOCTOU or config precondition no payload exercises — the same guessing forbidden for undeclared platforms. Candidates and the promotion cost are in [ToDo.md](ToDo.md).
+- **`FalseSanitizer`** is for code that occupies a sanitizer's position and provides nothing — [Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizer](src/main/java/org/owasp/cheatcode/pathtraversal/Vulnerable_None_Spring_GetOriginalFilename_FalseSanitizer.java), whose `getOriginalFilename()` reads like a framework sanitizer and returns the client's string verbatim. It is matrix-identical to `Vulnerable_None_JavaNIO_PathsGet_NoDefence` on all seven payloads, so the name is the *only* place that distinction can live — which is exactly why the trap belongs in a fixed-vocabulary slot rather than in free-text `Variant`.
+- Verdict is `Vulnerable`, never `Insecure`. Acronyms keep conventional casing: `ESAPI`, not `Esapi`.
 
 ### Test harness
 
@@ -78,7 +108,7 @@ Class names are the documentation. The pattern is `{Vulnerable|Secure}PathProces
 
 **Explicit `@Test` methods, not `@TestFactory` or `@ParameterizedTest`.** This is a deliberate rejection, not an oversight: stepping through one case in the VS Code debugger is the project's best learning tool, and dynamic tests debug badly. `assertCell` keeps `result`, `actual` and `expectation` as separate locals rather than chaining, so a single step-over shows each value in turn. Do not "tidy" that into a chain.
 
-New payloads go in [Payload](src/test/java/org/owasp/cheatcode/pathtraversal/Payload.java) with a matching `@Test` in the base class **and a stub in all fourteen concrete classes** — the step that is easiest to forget. Forgetting it is not a silent test loss: the inherited method still runs, it just stops being individually debuggable. **Payload strings must be literals** — `LEGIT_SUBFOLDER_FILE` was previously built with `File.separator`, which silently made it a different payload per platform. Never reintroduce that.
+New payloads go in [Payload](src/test/java/org/owasp/cheatcode/pathtraversal/Payload.java) with a matching `@Test` in the base class **and a stub in all fifteen concrete classes** — the step that is easiest to forget. Forgetting it is not a silent test loss: the inherited method still runs, it just stops being individually debuggable. **Payload strings must be literals** — `LEGIT_SUBFOLDER_FILE` was previously built with `File.separator`, which silently made it a different payload per platform. Never reintroduce that.
 
 Adding an implementation or a payload: run it first, read the `UNDECLARED` failures (which print the observed outcome and the line to add), check each observed outcome is actually correct, then declare it. An expectation written before the run is a guess.
 
@@ -102,7 +132,7 @@ ESAPI reads [src/main/resources/esapi/](src/main/resources/esapi/) (`ESAPI.prope
 
 `Main.createProcessors()` must list every processor that has a test class — keep the two in sync, since the README results table is generated from the test run and the console walkthrough is meant to match it.
 
-The two ESAPI filename processors reach identical verdicts by different routes, and the distinction is the point of having both: `SecurePathProcessor_ESAPI_FileNameValidation` takes its allowed extensions from `ESAPI.securityConfiguration().getAllowedFileExtensions()` (config-driven), while `SecurePathProcessor_ESAPI_DefaultFileNameValidation` hard-codes the list in Java. Note that `getValidFileName` rejects a null/empty extension list outright — passing `null` yields `ValidationException: Internal Error` and silently disables the sanitizer rather than allowing any extension.
+The two ESAPI filename processors reach identical verdicts by different routes, and the distinction is the point of having both: `Secure_RawString_ESAPI_FileNameFromConfig_Validator` takes its allowed extensions from `ESAPI.securityConfiguration().getAllowedFileExtensions()` (config-driven), while `Secure_RawString_ESAPI_FileNameHardCodedExtensions_Validator` hard-codes the list in Java. Note that `getValidFileName` rejects a null/empty extension list outright — passing `null` yields `ValidationException: Internal Error` and silently disables the sanitizer rather than allowing any extension.
 
 ## CI
 

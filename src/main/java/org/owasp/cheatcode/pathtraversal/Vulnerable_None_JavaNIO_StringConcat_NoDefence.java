@@ -8,13 +8,13 @@ import java.nio.file.Paths;
  * that performs no validation or sanitization, and glues the path together from strings
  * instead of building it with Paths.get(base, input).
  *
- * <p>Kept alongside VulnerablePathProcessor_Default_NoChecks to make a point by comparison:
+ * <p>Kept alongside Vulnerable_None_JavaNIO_PathsGet_NoDefence to make a point by comparison:
  * the two differ only in the join, and they score identically on every payload. String
  * concatenation is a code smell here, not the vulnerability - the missing validation is.
  */
-public class VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat extends PathProcessor {
+public class Vulnerable_None_JavaNIO_StringConcat_NoDefence extends PathProcessor {
 
-    public VulnerablePathProcessor_Default_NoChecks_ImproperPathConcat(String baseDirectory) {
+    public Vulnerable_None_JavaNIO_StringConcat_NoDefence(String baseDirectory) {
         super(baseDirectory);
     }
 
