@@ -23,9 +23,15 @@ import org.owasp.cheatcode.harness.Verdict;
  * implementation.
  *
  * <p>A concrete test class supplies three things — the processor to build, a display name, and
- * {@link #expected()}, which declares what that processor does against each payload. It adds no
- * test methods. A payload belongs in {@link Payload} plus one {@code @Test} here, so that adding
- * one re-scores every existing implementation at once.
+ * {@link #expected()}, which declares what that processor does against each payload. It declares
+ * no payloads and no assertions of its own. A payload belongs in {@link Payload} plus one
+ * {@code @Test} here, so that adding one re-scores every existing implementation at once.
+ *
+ * <p>Each concrete class does re-declare these seven methods, as {@code @Test @Override} stubs
+ * calling {@code super}, folded into a {@code // #region} at the end of the file. They change
+ * nothing about the run; they exist because the VS Code Test Explorer discovers only methods a
+ * class declares, never one it inherits. A new payload therefore needs a stub in all fourteen
+ * classes as well as a {@code @Test} here — see {@code .design_docs/test_run_options.md}.
  *
  * <h2>Green means "matches what was recorded", not "nothing is vulnerable"</h2>
  *
@@ -42,10 +48,11 @@ import org.owasp.cheatcode.harness.Verdict;
  *
  * Every test method is a one-line call to {@link #assertCell}, which is written as a sequence of
  * separate locals rather than a chain. Put a breakpoint on the {@code processor.readFile} line and
- * run one test method from the VS Code gutter. Step <em>over</em> to watch the payload become a
- * {@link ReadFileResult}, then an {@link Outcome}, then a comparison; step <em>into</em> for the
- * part worth seeing — the implementation's own {@code getResource}, which holds the entire
- * technique in one method.
+ * debug one case — from the stub in the concrete test class, not from here. This class is
+ * abstract, so its own gutter icons resolve to no tests at all. Step <em>over</em> to watch the
+ * payload become a {@link ReadFileResult}, then an {@link Outcome}, then a comparison; step
+ * <em>into</em> for the part worth seeing — the implementation's own {@code getResource}, which
+ * holds the entire technique in one method.
  */
 @DisplayName("Path Processor Tests")
 abstract class BasePathProcessorTest {

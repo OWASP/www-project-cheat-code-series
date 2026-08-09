@@ -1,5 +1,7 @@
 package org.owasp.cheatcode.pathtraversal;
 
+import org.junit.jupiter.api.Test;
+
 import org.owasp.cheatcode.harness.Expectations;
 
 import static org.owasp.cheatcode.harness.Expectations.on;
@@ -56,4 +58,55 @@ class SecurePathProcessor_RegexValidation_Whitelist_AlphaNumericDotTest extends 
                  + "behaviour not yet observed."))
             .build();
     }
+
+    // #region Seven stubs so each case is runnable on its own - see .design_docs/test_run_options.md
+    //
+    // Every method below is already inherited from BasePathProcessorTest and adds nothing to the
+    // run: delete the whole block and the test count and every assertion stay exactly the same.
+    // They are here because the VS Code Test Explorer only discovers methods a class *declares*,
+    // never one it inherits, so without them "Debug Test" on a single case launches all seven.
+
+    @Test
+    @Override
+    void LegitCase_NormalFileName_ShouldReadFile() {
+        super.LegitCase_NormalFileName_ShouldReadFile();
+    }
+
+    @Test
+    @Override
+    void EdgeLegitCase_RelativePath_ShouldReadSubfolderLegitFile() {
+        super.EdgeLegitCase_RelativePath_ShouldReadSubfolderLegitFile();
+    }
+
+    @Test
+    @Override
+    void AttackCase_SingleLevelTraversal() {
+        super.AttackCase_SingleLevelTraversal();
+    }
+
+    @Test
+    @Override
+    void AttackCase_DoubleLevelTraversal() {
+        super.AttackCase_DoubleLevelTraversal();
+    }
+
+    @Test
+    @Override
+    void AttackCase_DoubleDotTraversal() {
+        super.AttackCase_DoubleDotTraversal();
+    }
+
+    @Test
+    @Override
+    void AttackCase_WindowsStylePathTraversal() {
+        super.AttackCase_WindowsStylePathTraversal();
+    }
+
+    @Test
+    @Override
+    void MalformedCase_NullCharacterInput() {
+        super.MalformedCase_NullCharacterInput();
+    }
+
+    // #endregion
 }
