@@ -82,7 +82,7 @@ jobs:
       # reading, since they carry the observed outcome for every UNDECLARED cell.
       - name: Upload recorded cells
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: results-${{ matrix.os }}-jdk${{ matrix.java }}
           path: target/cheatcode-results/
@@ -124,7 +124,7 @@ jobs:
         run: mvn -B exec:java@report
 
       - name: Upload the report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: outcome-matrix-report
           path: target/report/
